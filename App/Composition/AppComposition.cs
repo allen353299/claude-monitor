@@ -1,5 +1,6 @@
 using System;
 using ClaudeMonitor.App.ViewModels;
+using ClaudeMonitor.Core.Models;
 using ClaudeMonitor.Core.Platform;
 using ClaudeMonitor.Core.Sessions;
 using ClaudeMonitor.Platform.Windows;

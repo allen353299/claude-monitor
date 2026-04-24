@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using ClaudeMonitor.App.Composition;
 using ClaudeMonitor.App.ViewModels;
 using ClaudeMonitor.App.Views;
+using ClaudeMonitor.Core;
 
 namespace ClaudeMonitor.App;
 
@@ -30,6 +31,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             _popover = new PopoverWindow();
             _popoverVm = AppComposition.CreatePopoverViewModel(() => _popover?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
+            _popoverVm.ConversationRequested += OnConversationRequested;
             _popover.DataContext = _popoverVm;
             desktop.MainWindow = _popover;
             _popover.Show();
@@ -64,6 +66,15 @@ public partial class App : Application
         IsQuitting = true;
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
+    }
+
+    private void OnConversationRequested(object? sender, ConversationRequestedEventArgs e)
+    {
+        var window = new ConversationWindow
+        {
+            DataContext = new ConversationViewModel(e.Path, e.Title),
+        };
+        window.Show();
     }
 
     private void TogglePopover()

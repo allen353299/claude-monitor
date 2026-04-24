@@ -21,25 +21,31 @@ public static class SessionParser
         CancellationToken ct = default)
     {
         var lines = await ReadAllLinesSharedAsync(filePath.Value, ct).ConfigureAwait(false);
+        return DeserializeLines(lines, Math.Max(0, lines.Count - maxLines), lines.Count);
+    }
 
-        var start = Math.Max(0, lines.Count - maxLines);
-        var results = new List<SessionEntry>(Math.Min(maxLines, lines.Count - start));
+    public static async Task<IReadOnlyList<SessionEntry>> ParseAllAsync(
+        JsonlPath filePath,
+        CancellationToken ct = default)
+    {
+        var lines = await ReadAllLinesSharedAsync(filePath.Value, ct).ConfigureAwait(false);
+        return DeserializeLines(lines, 0, lines.Count);
+    }
 
-        for (var i = start; i < lines.Count; i++)
+    private static List<SessionEntry> DeserializeLines(IReadOnlyList<string> lines, int start, int endExclusive)
+    {
+        var results = new List<SessionEntry>(endExclusive - start);
+        for (var i = start; i < endExclusive; i++)
         {
             var line = lines[i];
             if (string.IsNullOrWhiteSpace(line)) continue;
-
             try
             {
                 var entry = JsonSerializer.Deserialize<SessionEntry>(line, Options);
                 if (entry != null) results.Add(entry);
             }
-            catch (JsonException)
-            {
-            }
+            catch (JsonException) { }
         }
-
         return results;
     }
 

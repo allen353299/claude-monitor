@@ -13,6 +13,17 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace ClaudeMonitor.App.ViewModels;
 
+public sealed class ConversationRequestedEventArgs : EventArgs
+{
+    public JsonlPath Path { get; }
+    public string Title { get; }
+    public ConversationRequestedEventArgs(JsonlPath path, string title)
+    {
+        Path = path;
+        Title = title;
+    }
+}
+
 public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposable
 {
     private static readonly TimeSpan TimeBasedPropertyRefreshInterval = TimeSpan.FromMinutes(1);
@@ -35,6 +46,10 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
 
     public IAsyncRelayCommand<string> ActivateSessionCommand { get; }
 
+    public IRelayCommand<string> ViewConversationCommand { get; }
+
+    public event EventHandler<ConversationRequestedEventArgs>? ConversationRequested;
+
     partial void OnIsCompactChanged(bool value)
     {
         foreach (var vm in Sessions) vm.IsCompact = value;
@@ -46,6 +61,7 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
         _activator = activator;
         _notifications = notifications;
         ActivateSessionCommand = new AsyncRelayCommand<string>(ActivateSessionAsync);
+        ViewConversationCommand = new RelayCommand<string>(RequestConversation);
 
         _scanner.SessionUpdated += OnSessionUpdated;
         _scanner.SessionRemoved += OnSessionRemoved;
@@ -73,6 +89,15 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
     }
 
     public Task StartAsync(CancellationToken ct = default) => _scanner.StartAsync(ct);
+
+    private void RequestConversation(string? sessionId)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId)) return;
+        var id = SessionId.From(sessionId);
+        var vm = Sessions.FindById(id);
+        if (vm is null) return;
+        ConversationRequested?.Invoke(this, new ConversationRequestedEventArgs(vm.JsonlPath, vm.PrimaryLabel));
+    }
 
     private async Task ActivateSessionAsync(string? sessionId)
     {

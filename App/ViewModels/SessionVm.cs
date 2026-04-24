@@ -12,6 +12,7 @@ public sealed partial class SessionVm : ObservableObject
     private static readonly TimeSpan DoneRecencyWindow = TimeSpan.FromHours(1);
 
     [ObservableProperty] private SessionId _id;
+    [ObservableProperty] private JsonlPath _jsonlPath;
     [ObservableProperty] private string _sessionName = "";
     [ObservableProperty] private string _projectPath = "";
     [ObservableProperty] private string? _customTitle;
@@ -117,6 +118,7 @@ public sealed partial class SessionVm : ObservableObject
 
     public void UpdateFrom(Session s)
     {
+        JsonlPath = s.JsonlPath;
         SessionName = s.SessionName;
         ProjectPath = s.ProjectPath.Value ?? "";
         CustomTitle = s.CustomTitle?.Value;
