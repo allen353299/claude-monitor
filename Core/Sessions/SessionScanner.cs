@@ -161,12 +161,9 @@ public sealed class SessionScanner : ISessionScanner
             await Task.Delay(_debounce, cts.Token).ConfigureAwait(false);
             await RefreshAsync(path, cts.Token).ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception)
-        {
-        }
+        catch (OperationCanceledException) { }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
         finally
         {
             if (_debouncersByPath.TryGetValue(path, out var current) && current == cts)
@@ -336,12 +333,7 @@ public sealed class SessionScanner : ISessionScanner
             {
                 await _fallbackLoop.ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception)
-            {
-            }
+            catch (OperationCanceledException) { }
         }
 
         _lifetimeCts.Dispose();

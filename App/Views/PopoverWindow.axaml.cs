@@ -6,8 +6,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
-using ClaudeMonitor.App.Persistence;
 using ClaudeMonitor.App.ViewModels;
+using ClaudeMonitor.Core.Persistence;
 
 namespace ClaudeMonitor.App.Views;
 
