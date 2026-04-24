@@ -25,8 +25,9 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            var vm = AppComposition.CreatePopoverViewModel();
-            _popover = new PopoverWindow { DataContext = vm };
+            _popover = new PopoverWindow();
+            var vm = AppComposition.CreatePopoverViewModel(() => _popover?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
+            _popover.DataContext = vm;
             desktop.MainWindow = _popover;
             _popover.Show();
             _ = vm.StartAsync();

@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using ClaudeMonitor.Core;
+using ClaudeMonitor.Core.Models;
 using ClaudeMonitor.Core.Platform;
 using ClaudeMonitor.Core.Sessions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -17,7 +19,9 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
 
     private readonly ISessionScanner _scanner;
     private readonly ISessionActivator _activator;
+    private readonly INotificationService _notifications;
     private readonly DispatcherTimer _ageTimer;
+    private readonly Dictionary<SessionId, SessionStatus> _lastNotifiedStatus = new();
 
     public SessionVmCollection Sessions { get; } = new();
 
@@ -36,10 +40,11 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
         foreach (var vm in Sessions) vm.IsCompact = value;
     }
 
-    public PopoverViewModel(ISessionScanner scanner, ISessionActivator activator)
+    public PopoverViewModel(ISessionScanner scanner, ISessionActivator activator, INotificationService notifications)
     {
         _scanner = scanner;
         _activator = activator;
+        _notifications = notifications;
         ActivateSessionCommand = new AsyncRelayCommand<string>(ActivateSessionAsync);
 
         _scanner.SessionUpdated += OnSessionUpdated;
@@ -51,6 +56,7 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
             var vm = new SessionVm { Id = s.Id, IsCompact = IsCompact };
             vm.UpdateFrom(s);
             Sessions.Add(vm);
+            _lastNotifiedStatus[s.Id] = s.Status;
         }
 
         Sessions.Sort(SessionVmRankComparer.Default);
@@ -112,12 +118,31 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
             }
             Sessions.Sort(SessionVmRankComparer.Default);
             Bar.Refresh(Sessions);
+            RaiseAttentionIfTransitioned(session);
         });
+    }
+
+    private void RaiseAttentionIfTransitioned(Session session)
+    {
+        var previous = _lastNotifiedStatus.TryGetValue(session.Id, out var prev) ? prev : SessionStatus.Connecting;
+        _lastNotifiedStatus[session.Id] = session.Status;
+
+        if (previous == session.Status) return;
+
+        var title = session.SessionName;
+        if (session.Status == SessionStatus.NeedsAttention)
+            _notifications.NotifyAttention(session.Id, title, "needs your attention");
+        else if (session.Status == SessionStatus.WaitingForInput && previous == SessionStatus.Working)
+            _notifications.NotifyAttention(session.Id, title, "task complete");
     }
 
     private void OnSessionRemoved(object? sender, SessionRemovedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() => Sessions.RemoveById(e.SessionId));
+        Dispatcher.UIThread.Post(() =>
+        {
+            Sessions.RemoveById(e.SessionId);
+            _lastNotifiedStatus.Remove(e.SessionId);
+        });
     }
 
     public async ValueTask DisposeAsync()
