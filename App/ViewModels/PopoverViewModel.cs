@@ -157,28 +157,28 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
     private void RefreshPixelBlocks()
     {
-        int total = Sessions.Count;
-        int working = 0, permission = 0, done = 0, idle = 0;
+        int sessionCount = Sessions.Count;
+        int working = 0, attention = 0, done = 0, idle = 0;
         foreach (var s in Sessions)
         {
             switch (s.Status)
             {
                 case SessionStatus.Working: working++; break;
-                case SessionStatus.NeedsAttention: permission++; break;
+                case SessionStatus.NeedsAttention: attention++; break;
                 case SessionStatus.WaitingForInput:
                     if (s.IsDoneRecent) done++; else idle++;
                     break;
             }
         }
 
-        var layout = DistributeBlocks(permission, done, working, idle, total, PixelColumns);
+        var columnLayout = DistributeBlocks(attention, done, working, idle, sessionCount, PixelColumns);
 
         for (int i = 0; i < PixelColumns; i++)
         {
-            PixelBlocks[i].Color = layout[i] switch
+            PixelBlocks[i].Color = columnLayout[i] switch
             {
                 'w' => StatusPalette.Working,
-                'p' => StatusPalette.Attention,
+                'a' => StatusPalette.Attention,
                 'd' => StatusPalette.Done,
                 'i' => StatusPalette.Idle,
                 _ => StatusPalette.PixelEmpty,
@@ -186,16 +186,16 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         }
     }
 
-    private static char[] DistributeBlocks(int permission, int done, int working, int idle, int total, int columns)
+    private static char[] DistributeBlocks(int attention, int done, int working, int idle, int sessionCount, int columns)
     {
         var result = new char[columns];
         Array.Fill(result, ' ');
-        if (total == 0) return result;
+        if (sessionCount == 0) return result;
 
-        var counts = new[] { permission, done, working, idle };
-        var keys = new[] { 'p', 'd', 'w', 'i' };
+        var counts = new[] { attention, done, working, idle };
+        var keys = new[] { 'a', 'd', 'w', 'i' };
 
-        double[] percentages = counts.Select(c => (double)c / total * columns).ToArray();
+        double[] percentages = counts.Select(c => (double)c / sessionCount * columns).ToArray();
         int[] allocated = percentages.Select(p => (int)Math.Floor(p)).ToArray();
         double[] remainders = percentages.Select((p, i) => p - allocated[i]).ToArray();
 

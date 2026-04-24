@@ -11,8 +11,8 @@ public sealed class SessionScanner : ISessionScanner
     private readonly TimeSpan _fallbackInterval;
     private readonly TimeSpan _debounce;
 
-    private readonly ConcurrentDictionary<string, Session> _sessions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _debouncers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, Session> _sessionsByPath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _debouncersByPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetimeCts = new();
 
     private FileSystemWatcher? _watcher;
@@ -34,7 +34,7 @@ public sealed class SessionScanner : ISessionScanner
     public event EventHandler<SessionUpdatedEventArgs>? SessionUpdated;
     public event EventHandler<SessionRemovedEventArgs>? SessionRemoved;
 
-    public IReadOnlyCollection<Session> CurrentSessions => _sessions.Values.ToArray();
+    public IReadOnlyCollection<Session> CurrentSessions => _sessionsByPath.Values.ToArray();
 
     public async Task StartAsync(CancellationToken ct = default)
     {
@@ -138,12 +138,12 @@ public sealed class SessionScanner : ISessionScanner
 
         var newCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
 
-        if (_debouncers.TryRemove(path, out var old))
+        if (_debouncersByPath.TryRemove(path, out var old))
         {
             try { old.Cancel(); } catch (ObjectDisposedException) { }
             old.Dispose();
         }
-        _debouncers[path] = newCts;
+        _debouncersByPath[path] = newCts;
 
         _ = Task.Run(async () =>
         {
@@ -160,9 +160,9 @@ public sealed class SessionScanner : ISessionScanner
             }
             finally
             {
-                if (_debouncers.TryGetValue(path, out var current) && current == newCts)
+                if (_debouncersByPath.TryGetValue(path, out var current) && current == newCts)
                 {
-                    _debouncers.TryRemove(path, out _);
+                    _debouncersByPath.TryRemove(path, out _);
                 }
                 newCts.Dispose();
             }
@@ -186,18 +186,18 @@ public sealed class SessionScanner : ISessionScanner
 
     private async Task FullScanAsync(CancellationToken ct)
     {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var livePidSessionIds = GetLivePidSessionIds();
 
         foreach (var file in EnumerateJsonlFiles())
         {
             if (ct.IsCancellationRequested) return;
-            seen.Add(file);
+            seenPaths.Add(file);
 
             var sessionId = Path.GetFileNameWithoutExtension(file);
             if (!livePidSessionIds.Contains(sessionId))
             {
-                if (_sessions.TryRemove(file, out var removed))
+                if (_sessionsByPath.TryRemove(file, out var removed))
                 {
                     SessionRemoved?.Invoke(this, new SessionRemovedEventArgs(removed.Id));
                 }
@@ -207,11 +207,11 @@ public sealed class SessionScanner : ISessionScanner
             await RefreshAsync(file, ct).ConfigureAwait(false);
         }
 
-        foreach (var path in _sessions.Keys.ToArray())
+        foreach (var path in _sessionsByPath.Keys.ToArray())
         {
-            if (!seen.Contains(path))
+            if (!seenPaths.Contains(path))
             {
-                if (_sessions.TryRemove(path, out var removed))
+                if (_sessionsByPath.TryRemove(path, out var removed))
                 {
                     SessionRemoved?.Invoke(this, new SessionRemovedEventArgs(removed.Id));
                 }
@@ -223,7 +223,7 @@ public sealed class SessionScanner : ISessionScanner
     {
         if (!File.Exists(path))
         {
-            if (_sessions.TryRemove(path, out var removed))
+            if (_sessionsByPath.TryRemove(path, out var removed))
             {
                 SessionRemoved?.Invoke(this, new SessionRemovedEventArgs(removed.Id));
             }
@@ -239,7 +239,7 @@ public sealed class SessionScanner : ISessionScanner
 
         if (!isLive)
         {
-            if (_sessions.TryRemove(path, out var removed))
+            if (_sessionsByPath.TryRemove(path, out var removed))
             {
                 SessionRemoved?.Invoke(this, new SessionRemovedEventArgs(removed.Id));
             }
@@ -289,7 +289,7 @@ public sealed class SessionScanner : ISessionScanner
             LastActivity: mtime.Value);
 
         var isChanged = true;
-        _sessions.AddOrUpdate(
+        _sessionsByPath.AddOrUpdate(
             path,
             _ => session,
             (_, existing) =>
@@ -393,12 +393,12 @@ public sealed class SessionScanner : ISessionScanner
             _watcher = null;
         }
 
-        foreach (var kv in _debouncers.ToArray())
+        foreach (var kv in _debouncersByPath.ToArray())
         {
             try { kv.Value.Cancel(); } catch (ObjectDisposedException) { }
             kv.Value.Dispose();
         }
-        _debouncers.Clear();
+        _debouncersByPath.Clear();
 
         if (_fallbackLoop != null)
         {
