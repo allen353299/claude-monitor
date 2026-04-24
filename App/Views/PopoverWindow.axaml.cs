@@ -73,6 +73,7 @@ public partial class PopoverWindow : Window
         pin.Foreground = new SolidColorBrush(Topmost
             ? Color.Parse("#ffffff")
             : Color.Parse("#666666"));
+        ToolTip.SetTip(pin, Topmost ? "Unpin from top" : "Pin to top");
     }
 
     private void StartTopmostTimer()

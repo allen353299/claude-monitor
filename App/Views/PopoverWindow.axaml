@@ -112,7 +112,6 @@
                         Cursor="Hand"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Center"
-                        ToolTip.Tip="Toggle always-on-top"
                         Click="OnPinClick">
                     <Button.Styles>
                         <Style Selector="Button:pointerover /template/ ContentPresenter">
@@ -196,17 +195,17 @@
                                         <Rectangle Fill="#ff6600"
                                                    Opacity="0"
                                                    IsHitTestVisible="False"
-                                                   Classes.glow-urgent="{Binding IsUrgent}" />
+                                                   Classes.glow-urgent="{Binding ShouldGlowUrgent}" />
                                         <Rectangle Fill="#06b6d4"
                                                    Opacity="0"
                                                    IsHitTestVisible="False"
-                                                   Classes.glow-done="{Binding IsDoneRecent}" />
+                                                   Classes.glow-done="{Binding ShouldGlowDone}" />
                                         <Border Padding="16,9">
                                     <StackPanel Spacing="3">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <Rectangle Width="6" Height="6"
                                                        Fill="{Binding StatusColor}"
-                                                       Classes.dot-urgent="{Binding IsUrgent}"
+                                                       Classes.dot-urgent="{Binding ShouldGlowUrgent}"
                                                        VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding SessionName}"
                                                        FontFamily="{StaticResource MonoFont}"

@@ -78,6 +78,12 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
     private async Task ActivateSessionAsync(string? sessionId)
     {
         if (string.IsNullOrEmpty(sessionId)) return;
+        var vm = Sessions.FirstOrDefault(v => v.Id == sessionId);
+        if (vm is not null)
+        {
+            vm.Acknowledge();
+            SortSessions();
+        }
         try
         {
             await _activator.ActivateAsync(sessionId).ConfigureAwait(false);
@@ -125,19 +131,19 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         });
     }
 
-    private static int StatusRank(SessionStatus s) => s switch
+    private static int SessionRank(SessionVm v)
     {
-        SessionStatus.NeedsAttention => 0,
-        SessionStatus.Working => 1,
-        SessionStatus.WaitingForInput => 2,
-        _ => 3,
-    };
+        if (v.Status == SessionStatus.NeedsAttention) return 0;
+        if (v.Status == SessionStatus.WaitingForInput && v.IsDoneRecent) return 1;
+        if (v.Status == SessionStatus.Working) return 2;
+        if (v.Status == SessionStatus.WaitingForInput) return 3;
+        return 4;
+    }
 
     private void SortSessions()
     {
         var sorted = Sessions
-            .OrderBy(v => StatusRank(v.Status))
-            .ThenBy(v => v.Status == SessionStatus.WaitingForInput && !v.IsDoneRecent ? 1 : 0)
+            .OrderBy(SessionRank)
             .ThenByDescending(v => v.LastActivity)
             .ToList();
 

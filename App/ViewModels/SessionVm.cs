@@ -20,6 +20,8 @@ public sealed partial class SessionVm : ObservableObject
     [ObservableProperty] private bool _isLive;
     [ObservableProperty] private DateTimeOffset _lastActivity;
 
+    private DateTimeOffset? _acknowledgedAt;
+
     public double CardOpacity => IsLive ? 1.0 : 0.4;
 
     public bool IsUrgent => Status == SessionStatus.NeedsAttention;
@@ -27,9 +29,23 @@ public sealed partial class SessionVm : ObservableObject
     public bool IsDoneRecent => Status == SessionStatus.WaitingForInput
         && (DateTimeOffset.UtcNow - LastActivity) < TimeSpan.FromHours(1);
 
+    private bool IsAcknowledged => _acknowledgedAt.HasValue && _acknowledgedAt.Value >= LastActivity;
+
+    public bool ShouldGlowUrgent => IsUrgent && !IsAcknowledged;
+
+    public bool ShouldGlowDone => IsDoneRecent && !IsAcknowledged;
+
+    public void Acknowledge()
+    {
+        _acknowledgedAt = LastActivity;
+        OnPropertyChanged(nameof(ShouldGlowUrgent));
+        OnPropertyChanged(nameof(ShouldGlowDone));
+    }
+
     public void NotifyTimeBasedProperties()
     {
         OnPropertyChanged(nameof(IsDoneRecent));
+        OnPropertyChanged(nameof(ShouldGlowDone));
         OnPropertyChanged(nameof(StatusLabel));
         OnPropertyChanged(nameof(StatusColor));
     }
@@ -95,5 +111,7 @@ public sealed partial class SessionVm : ObservableObject
         OnPropertyChanged(nameof(IsRecap));
         OnPropertyChanged(nameof(IsUrgent));
         OnPropertyChanged(nameof(IsDoneRecent));
+        OnPropertyChanged(nameof(ShouldGlowUrgent));
+        OnPropertyChanged(nameof(ShouldGlowDone));
     }
 }
