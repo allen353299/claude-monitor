@@ -10,14 +10,16 @@ public sealed partial class DashboardViewModel : ObservableObject
     public MonitorTabViewModel Monitor { get; }
     public HistoryTabViewModel History { get; }
     public CostTabViewModel Cost { get; } = new();
-    public MemoryTabViewModel Memory { get; } = new();
+    public MemoryTabViewModel Memory { get; }
     public SettingsTabViewModel Settings { get; } = new();
 
-    public DashboardViewModel(PopoverViewModel sharedPopover, IHistoryReader historyReader)
+    public DashboardViewModel(PopoverViewModel sharedPopover, IHistoryReader historyReader, IMemoryReader memoryReader)
     {
         Monitor = new MonitorTabViewModel(sharedPopover);
         History = new HistoryTabViewModel(historyReader);
+        Memory = new MemoryTabViewModel(memoryReader);
         _ = History.RefreshAsync();
+        _ = Memory.RefreshAsync();
     }
 }
 
@@ -30,11 +32,6 @@ public sealed class MonitorTabViewModel
 public sealed partial class CostTabViewModel : ObservableObject
 {
     [ObservableProperty] private string _placeholder = "Cost coming soon.";
-}
-
-public sealed partial class MemoryTabViewModel : ObservableObject
-{
-    [ObservableProperty] private string _placeholder = "Memory coming soon.";
 }
 
 public sealed partial class SettingsTabViewModel : ObservableObject

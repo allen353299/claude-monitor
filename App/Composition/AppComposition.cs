@@ -23,7 +23,7 @@ public static class AppComposition
 
     public static DashboardViewModel CreateDashboardViewModel(PopoverViewModel popover)
     {
-        return new DashboardViewModel(popover, new HistoryReader());
+        return new DashboardViewModel(popover, new HistoryReader(), new MemoryReader(new ProjectPathDecoder()));
     }
 
     private static ISessionActivator CreateSessionActivator(ILiveSessionIndex liveSessions)

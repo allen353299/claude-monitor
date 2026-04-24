@@ -115,12 +115,78 @@
                            VerticalAlignment="Center" />
             </TabItem>
             <TabItem Header="MEMORY">
-                <TextBlock Text="{Binding Memory.Placeholder}"
-                           Foreground="#666666"
-                           FontFamily="{StaticResource MonoFont}"
-                           FontSize="11"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
+                <Grid ColumnDefinitions="260,*" DataContext="{Binding Memory}" Margin="12">
+                    <Border Grid.Column="0"
+                            BorderBrush="#222222"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ListBox ItemsSource="{Binding Projects}"
+                                     SelectedItem="{Binding SelectedProject, Mode=TwoWay}"
+                                     Background="Transparent"
+                                     BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MemoryProjectVm">
+                                        <StackPanel Spacing="2" Margin="4">
+                                            <TextBlock Text="{Binding DisplayPath}"
+                                                       FontFamily="{StaticResource MonoFont}"
+                                                       FontSize="11"
+                                                       Foreground="#cccccc"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding FileCountText}"
+                                                       FontFamily="{StaticResource MonoFont}"
+                                                       FontSize="9"
+                                                       Foreground="#666666" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </ScrollViewer>
+                    </Border>
+                    <Grid Grid.Column="1" Margin="12,0,0,0" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0"
+                                BorderBrush="#222222"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                MaxHeight="140">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding SelectedProject.Files}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:MemoryFileVm">
+                                            <Button Background="Transparent"
+                                                    BorderBrush="#222222"
+                                                    BorderThickness="0,0,0,1"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Left"
+                                                    Padding="8,6"
+                                                    Click="OnMemoryFileClick"
+                                                    Tag="{Binding}">
+                                                <TextBlock Text="{Binding FileName}"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="11"
+                                                           Foreground="#cccccc" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+                        <Border Grid.Row="1"
+                                BorderBrush="#222222"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Margin="0,8,0,0">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                                <SelectableTextBlock Text="{Binding SelectedFile.Content, FallbackValue='Select a file.'}"
+                                                     FontFamily="{StaticResource MonoFont}"
+                                                     FontSize="11"
+                                                     Foreground="#cccccc"
+                                                     TextWrapping="Wrap"
+                                                     Padding="12" />
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
             </TabItem>
             <TabItem Header="SETTINGS">
                 <TextBlock Text="{Binding Settings.Placeholder}"
