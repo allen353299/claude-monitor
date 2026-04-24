@@ -143,17 +143,18 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
 
     private void RaiseAttentionIfTransitioned(Session session)
     {
-        var hadPrevious = _lastNotifiedStatus.TryGetValue(session.Id, out var previous);
+        SessionStatus? previous = _lastNotifiedStatus.TryGetValue(session.Id, out var prev) ? prev : null;
         _lastNotifiedStatus[session.Id] = session.Status;
 
-        if (!hadPrevious) return;
-        if (previous == session.Status) return;
-
-        var title = session.SessionName;
-        if (session.Status == SessionStatus.NeedsAttention)
-            _notifications.NotifyAttention(session.Id, title, "needs your attention");
-        else if (session.Status == SessionStatus.WaitingForInput && previous == SessionStatus.Working)
-            _notifications.NotifyAttention(session.Id, title, "task complete");
+        switch (StatusTransition.Decide(previous, session.Status))
+        {
+            case AttentionTrigger.NeedsAttention:
+                _notifications.NotifyAttention(session.Id, session.SessionName, "needs your attention");
+                break;
+            case AttentionTrigger.TaskComplete:
+                _notifications.NotifyAttention(session.Id, session.SessionName, "task complete");
+                break;
+        }
     }
 
     private void OnSessionRemoved(object? sender, SessionRemovedEventArgs e)
