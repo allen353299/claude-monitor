@@ -68,8 +68,11 @@ public sealed partial class SettingsTabViewModel : ObservableObject
     {
         if (!Version.TryParse(latest, out var l)) return false;
         if (!Version.TryParse(current, out var c)) return true;
-        return l > c;
+        return Normalize(l) > Normalize(c);
     }
+
+    private static Version Normalize(Version v) =>
+        new(v.Major, v.Minor, v.Build < 0 ? 0 : v.Build, v.Revision < 0 ? 0 : v.Revision);
 
     private static HttpClient CreateHttpClient()
     {

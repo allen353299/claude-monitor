@@ -25,11 +25,9 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="Auto,*">
-        <TabControl Grid.Row="1"
-                    SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
-                    Background="Transparent"
-                    Padding="0">
+    <TabControl SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                Background="Transparent"
+                Padding="0">
             <TabItem Header="MONITOR">
                 <Grid Margin="12" DataContext="{Binding Monitor.Popover}">
                     <TextBlock Text="NO ACTIVE SESSIONS"
@@ -364,6 +362,5 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-        </TabControl>
-    </Grid>
+    </TabControl>
 </Window>

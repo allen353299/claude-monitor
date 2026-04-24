@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ClaudeMonitor.Core;
@@ -43,7 +44,11 @@ public sealed partial class ConversationViewModel : ObservableObject
             }
             ApplyFilter();
         }
-        catch (Exception ex)
+        catch (IOException ex)
+        {
+            Error = ex.Message;
+        }
+        catch (JsonException ex)
         {
             Error = ex.Message;
         }

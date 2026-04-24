@@ -245,6 +245,7 @@
                     <ItemsControl ItemsSource="{Binding Sessions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SessionVm">
+                                <Grid Opacity="{Binding CardOpacity}">
                                 <Button Classes="session-card"
                                         Background="Transparent"
                                         BorderBrush="#222222"
@@ -254,7 +255,6 @@
                                         HorizontalAlignment="Stretch"
                                         Cursor="Hand"
                                         CornerRadius="0"
-                                        Opacity="{Binding CardOpacity}"
                                         IsEnabled="{Binding IsLive}"
                                         Command="{Binding $parent[ItemsControl].((vm:PopoverViewModel)DataContext).ActivateSessionCommand}"
                                         CommandParameter="{Binding Id.Value}">
@@ -345,28 +345,6 @@
                                                        Foreground="{x:Static theme:StatusPalette.Attention}"
                                                        VerticalAlignment="Center"
                                                        IsVisible="{Binding PendingTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                            <Button Content="&#xE8A5;"
-                                                    FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                                    Width="18" Height="18"
-                                                    Padding="0"
-                                                    Margin="6,0,0,0"
-                                                    Background="Transparent"
-                                                    Foreground="#666666"
-                                                    BorderThickness="0"
-                                                    FontSize="10"
-                                                    Cursor="Hand"
-                                                    VerticalContentAlignment="Center"
-                                                    HorizontalContentAlignment="Center"
-                                                    ToolTip.Tip="View conversation"
-                                                    Command="{Binding $parent[ItemsControl].((vm:PopoverViewModel)DataContext).ViewConversationCommand}"
-                                                    CommandParameter="{Binding Id.Value}">
-                                                <Button.Styles>
-                                                    <Style Selector="Button:pointerover /template/ ContentPresenter">
-                                                        <Setter Property="Background" Value="#222222" />
-                                                        <Setter Property="Foreground" Value="#ffffff" />
-                                                    </Style>
-                                                </Button.Styles>
-                                            </Button>
                                         </StackPanel>
                                         <TextBlock Text="{Binding ProjectPath}"
                                                    Margin="14,0,0,0"
@@ -388,6 +366,31 @@
                                         </Border>
                                     </Grid>
                                 </Button>
+                                <Button Content="&#xE8A5;"
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        Width="22" Height="22"
+                                        Padding="0"
+                                        Margin="0,4,12,0"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        Background="Transparent"
+                                        Foreground="#666666"
+                                        BorderThickness="0"
+                                        FontSize="11"
+                                        Cursor="Hand"
+                                        VerticalContentAlignment="Center"
+                                        HorizontalContentAlignment="Center"
+                                        ToolTip.Tip="View conversation"
+                                        Command="{Binding $parent[ItemsControl].((vm:PopoverViewModel)DataContext).ViewConversationCommand}"
+                                        CommandParameter="{Binding Id.Value}">
+                                    <Button.Styles>
+                                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                            <Setter Property="Background" Value="#222222" />
+                                            <Setter Property="Foreground" Value="#ffffff" />
+                                        </Style>
+                                    </Button.Styles>
+                                </Button>
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
