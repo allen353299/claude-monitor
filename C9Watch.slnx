@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/C9Watch.App/C9Watch.App.csproj" />
+    <Project Path="src/C9Watch.Core/C9Watch.Core.csproj" />
+    <Project Path="src/C9Watch.Platform.Mac/C9Watch.Platform.Mac.csproj" />
+    <Project Path="src/C9Watch.Platform.Windows/C9Watch.Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/C9Watch.Core.Tests/C9Watch.Core.Tests.csproj" />
+  </Folder>
+</Solution>
