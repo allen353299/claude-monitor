@@ -30,7 +30,7 @@ Always-on-top floating window showing live session status, with one-click focus 
 git clone https://github.com/allen353299/claude-monitor.git
 cd claude-monitor
 dotnet build
-dotnet run --project src/C9Watch.App
+dotnet run --project src/ClaudeMonitor.App
 ```
 
 Or double-click `run.bat` on Windows.
@@ -39,12 +39,12 @@ Or double-click `run.bat` on Windows.
 
 ```
 src/
-  C9Watch.Core/                 cross-platform: JSONL parser, status analyzer, session scanner
-  C9Watch.Platform.Windows/     Win32 P/Invoke: find & focus terminal windows
-  C9Watch.Platform.Mac/         (stub, reserved for future)
-  C9Watch.App/                  Avalonia UI (XAML, ViewModels)
+  ClaudeMonitor.Core/                 cross-platform: JSONL parser, status analyzer, session scanner
+  ClaudeMonitor.Platform.Windows/     Win32 P/Invoke: find & focus terminal windows
+  ClaudeMonitor.Platform.Mac/         (stub, reserved for future)
+  ClaudeMonitor.App/                  Avalonia UI (XAML, ViewModels)
 tests/
-  C9Watch.Core.Tests/           xUnit unit tests for StatusAnalyzer (31 tests)
+  ClaudeMonitor.Core.Tests/           xUnit unit tests for StatusAnalyzer (31 tests)
 ```
 
 ## Tech stack
@@ -55,7 +55,7 @@ tests/
 
 ## Credit
 
-This project is a .NET port inspired by and derived from [minchenlee/c9watch](https://github.com/minchenlee/c9watch) — a macOS-first menu-bar app written in Tauri (Rust + Svelte). The status-detection algorithm (`StatusAnalyzer`, `PermissionChecker`) and the popover visual design are ported faithfully from the original. Go star the upstream; it's well-crafted.
+Based on [minchenlee/c9watch](https://github.com/minchenlee/c9watch) — a macOS-first menu-bar app in Tauri. The status-detection algorithm and popover design are ported from the original.
 
 Icon is from the original repo (MIT).
 
