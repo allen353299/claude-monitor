@@ -35,7 +35,3 @@ public sealed class MonitorTabViewModel
     public MonitorTabViewModel(PopoverViewModel popover) => Popover = popover;
 }
 
-public sealed partial class SettingsTabViewModel : ObservableObject
-{
-    [ObservableProperty] private string _placeholder = "Settings coming soon.";
-}
