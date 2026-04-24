@@ -1,30 +1,69 @@
 using System;
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using ClaudeMonitor.App.Persistence;
+using ClaudeMonitor.App.ViewModels;
 
 namespace ClaudeMonitor.App.Views;
 
 public partial class PopoverWindow : Window
 {
     private static readonly TimeSpan TopmostReapplyInterval = TimeSpan.FromSeconds(2);
+    private const double CompactHeightThreshold = 180;
 
     private DispatcherTimer? _topmostTimer;
+
+    private bool _stateRestored;
 
     public PopoverWindow()
     {
         InitializeComponent();
+        RestoreWindowState();
         UpdatePinVisual();
         UpdateTaskbarVisibility();
         Opened += (_, _) =>
         {
             ApplyTopmost();
             StartTopmostTimer();
+            SyncCompactMode();
+            _stateRestored = true;
         };
         Deactivated += (_, _) => ApplyTopmost();
+        SizeChanged += (_, _) =>
+        {
+            SyncCompactMode();
+            PersistWindowState();
+        };
+        PositionChanged += (_, _) => PersistWindowState();
+        Closing += (_, _) => PersistWindowState();
+    }
+
+    private void RestoreWindowState()
+    {
+        if (!PersistedWindowStateStore.TryLoad(out var state)) return;
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Position = new PixelPoint(state.X, state.Y);
+        Width = state.Width;
+        Height = state.Height;
+        Topmost = state.Topmost;
+    }
+
+    private void PersistWindowState()
+    {
+        if (!_stateRestored) return;
+        PersistedWindowStateStore.Save(new PersistedWindowState(
+            Position.X, Position.Y, Width, Height, Topmost));
+    }
+
+    private void SyncCompactMode()
+    {
+        if (DataContext is PopoverViewModel vm)
+            vm.IsCompact = Bounds.Height < CompactHeightThreshold;
     }
 
     private void OnDragHandlePressed(object? sender, PointerPressedEventArgs e)
@@ -41,6 +80,7 @@ public partial class PopoverWindow : Window
         UpdatePinVisual();
         UpdateTaskbarVisibility();
         ApplyTopmost();
+        PersistWindowState();
     }
 
     private void UpdateTaskbarVisibility()
