@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ClaudeMonitor.App.ViewModels"
+        x:Class="ClaudeMonitor.App.Views.DashboardWindow"
+        x:DataType="vm:DashboardViewModel"
+        Width="900" Height="620"
+        MinWidth="640" MinHeight="420"
+        Background="#0f0f0f"
+        Title="Claude Monitor"
+        Icon="avares://ClaudeMonitor.App/Assets/ClaudeMonitor.ico">
+
+    <Window.Resources>
+        <FontFamily x:Key="MonoFont">Cascadia Mono,Consolas,Courier New</FontFamily>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TabItem">
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="#888888" />
+            <Setter Property="Padding" Value="14,8" />
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Foreground" Value="#ffffff" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <TabControl Grid.Row="1"
+                    SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                    Background="Transparent"
+                    Padding="0">
+            <TabItem Header="MONITOR">
+                <Grid Margin="0,8,0,0">
+                    <TextBlock Text="Live session view — reuse the popover data."
+                               Foreground="#666666"
+                               FontFamily="{StaticResource MonoFont}"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </TabItem>
+            <TabItem Header="HISTORY">
+                <TextBlock Text="{Binding History.Placeholder}"
+                           Foreground="#666666"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="11"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </TabItem>
+            <TabItem Header="COST">
+                <TextBlock Text="{Binding Cost.Placeholder}"
+                           Foreground="#666666"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="11"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </TabItem>
+            <TabItem Header="MEMORY">
+                <TextBlock Text="{Binding Memory.Placeholder}"
+                           Foreground="#666666"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="11"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </TabItem>
+            <TabItem Header="SETTINGS">
+                <TextBlock Text="{Binding Settings.Placeholder}"
+                           Foreground="#666666"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="11"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

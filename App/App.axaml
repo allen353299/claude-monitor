@@ -14,8 +14,10 @@
                       Clicked="OnTrayClicked">
                 <TrayIcon.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Show" Click="OnTrayShowClick" />
-                        <NativeMenuItem Header="Hide" Click="OnTrayHideClick" />
+                        <NativeMenuItem Header="Show popover" Click="OnTrayShowClick" />
+                        <NativeMenuItem Header="Hide popover" Click="OnTrayHideClick" />
+                        <NativeMenuItem Header="-" />
+                        <NativeMenuItem Header="Open dashboard" Click="OnTrayDashboardClick" />
                         <NativeMenuItem Header="-" />
                         <NativeMenuItem Header="Quit" Click="OnTrayQuitClick" />
                     </NativeMenu>

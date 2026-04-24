@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using ClaudeMonitor.App.Composition;
+using ClaudeMonitor.App.ViewModels;
 using ClaudeMonitor.App.Views;
 
 namespace ClaudeMonitor.App;
@@ -12,6 +13,8 @@ namespace ClaudeMonitor.App;
 public partial class App : Application
 {
     private PopoverWindow? _popover;
+    private DashboardWindow? _dashboard;
+    private PopoverViewModel? _popoverVm;
 
     public static bool IsQuitting { get; private set; }
 
@@ -26,11 +29,11 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             _popover = new PopoverWindow();
-            var vm = AppComposition.CreatePopoverViewModel(() => _popover?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
-            _popover.DataContext = vm;
+            _popoverVm = AppComposition.CreatePopoverViewModel(() => _popover?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
+            _popover.DataContext = _popoverVm;
             desktop.MainWindow = _popover;
             _popover.Show();
-            _ = vm.StartAsync();
+            _ = _popoverVm.StartAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -41,6 +44,20 @@ public partial class App : Application
     private void OnTrayShowClick(object? sender, EventArgs e) => ShowPopover();
 
     private void OnTrayHideClick(object? sender, EventArgs e) => _popover?.Hide();
+
+    private void OnTrayDashboardClick(object? sender, EventArgs e) => ShowDashboard();
+
+    private void ShowDashboard()
+    {
+        if (_popoverVm is null) return;
+        if (_dashboard is null)
+        {
+            _dashboard = new DashboardWindow { DataContext = new DashboardViewModel(_popoverVm) };
+            _dashboard.Closed += (_, _) => _dashboard = null;
+        }
+        _dashboard.Show();
+        _dashboard.Activate();
+    }
 
     private void OnTrayQuitClick(object? sender, EventArgs e)
     {
