@@ -315,16 +315,8 @@ public sealed class SessionScanner : ISessionScanner
             return;
         }
 
-        var status = StatusAnalyzer.DetermineStatus(entries);
+        var status = StatusAnalyzer.DetermineStatus(entries, mtime);
         var pendingTool = StatusAnalyzer.GetPendingToolName(entries);
-
-        if (pendingTool is not null
-            && pendingTool != "Question"
-            && status != SessionStatus.NeedsAttention
-            && status != SessionStatus.Working)
-        {
-            status = SessionStatus.NeedsAttention;
-        }
         var enriched = SessionEnricher.Enrich(entries);
         var customTitle = ExtractCustomTitle(entries);
 

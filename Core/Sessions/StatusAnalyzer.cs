@@ -5,13 +5,14 @@ namespace ClaudeMonitor.Core.Sessions;
 
 public static class StatusAnalyzer
 {
+    private const int PermissionStaleSeconds = 15;
+
     public static SessionStatus DetermineStatus(
         IReadOnlyList<SessionEntry> entries,
-        PermissionChecker? checker = null,
+        DateTimeOffset? fileMtime = null,
         DateTimeOffset? now = null)
     {
         ArgumentNullException.ThrowIfNull(entries);
-        checker ??= PermissionChecker.Default;
         var nowValue = now ?? DateTimeOffset.UtcNow;
 
         if (entries.Count == 0) return SessionStatus.Connecting;
@@ -28,16 +29,6 @@ public static class StatusAnalyzer
 
         if (lastMeaningfulIdx < 0) return SessionStatus.Connecting;
 
-        var hasTrailingProgress = false;
-        for (var i = lastMeaningfulIdx + 1; i < entries.Count; i++)
-        {
-            if (entries[i] is UnknownEntry)
-            {
-                hasTrailingProgress = true;
-                break;
-            }
-        }
-
         var last = entries[lastMeaningfulIdx];
 
         if (last is UserEntry ue)
@@ -48,43 +39,51 @@ public static class StatusAnalyzer
                     ? SessionStatus.Working
                     : SessionStatus.WaitingForInput;
             }
+
+            if (fileMtime.HasValue
+                && (nowValue - fileMtime.Value).TotalSeconds > PermissionStaleSeconds)
+            {
+                return SessionStatus.NeedsAttention;
+            }
+
             return IsEntryRecent(ue.Base.Timestamp, 30, nowValue)
                 ? SessionStatus.Working
                 : SessionStatus.WaitingForInput;
         }
 
-        if (last is AssistantEntry ae)
+        var ae = (AssistantEntry)last;
+        var msg = ae.Message;
+
+        if (HasPendingAskUserQuestion(msg.Content))
         {
-            var msg = ae.Message;
-            var rawStatus = AnalyzeAssistantMessage(msg, checker);
-
-            if (HasPendingAskUserQuestion(msg.Content))
-            {
-                return SessionStatus.NeedsAttention;
-            }
-
-            if (IsAssistantAskingQuestion(msg) && !IsEntryRecent(ae.Base.Timestamp, 20, nowValue))
-            {
-                return SessionStatus.NeedsAttention;
-            }
-
-            return rawStatus switch
-            {
-                SessionStatus.Working => ResolveWorking(msg, ae.Base.Timestamp, hasTrailingProgress, nowValue),
-                SessionStatus.NeedsAttention => SessionStatus.NeedsAttention,
-                _ => rawStatus,
-            };
+            return SessionStatus.NeedsAttention;
         }
 
-        return SessionStatus.WaitingForInput;
+        if (IsAssistantAskingQuestion(msg) && !IsEntryRecent(ae.Base.Timestamp, 20, nowValue))
+        {
+            return SessionStatus.NeedsAttention;
+        }
+
+        if (HasPendingToolUses(msg.Content))
+        {
+            return SessionStatus.Working;
+        }
+
+        return msg.StopReason switch
+        {
+            "end_turn" => SessionStatus.WaitingForInput,
+            "max_tokens" or "stop_sequence" => SessionStatus.WaitingForInput,
+            "tool_use" => SessionStatus.Working,
+            null => IsEntryRecent(ae.Base.Timestamp, 20, nowValue)
+                ? SessionStatus.Working
+                : SessionStatus.WaitingForInput,
+            _ => SessionStatus.WaitingForInput,
+        };
     }
 
-    public static string? GetPendingToolName(
-        IReadOnlyList<SessionEntry> entries,
-        PermissionChecker? checker = null)
+    public static string? GetPendingToolName(IReadOnlyList<SessionEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
-        checker ??= PermissionChecker.Default;
 
         AssistantMessage? lastAssistant = null;
         for (var i = entries.Count - 1; i >= 0; i--)
@@ -104,16 +103,7 @@ public static class StatusAnalyzer
         {
             if (item is not ToolUseContent tu) continue;
             if (completedIds.Contains(tu.Id)) continue;
-
-            if (tu.Name == "AskUserQuestion")
-            {
-                return "AskUserQuestion";
-            }
-
-            if (!checker.IsAutoApproved(tu.Name, tu.Input))
-            {
-                return tu.Name;
-            }
+            return tu.Name;
         }
 
         if (IsAssistantAskingQuestion(lastAssistant))
@@ -124,57 +114,7 @@ public static class StatusAnalyzer
         return null;
     }
 
-    private static SessionStatus ResolveWorking(
-        AssistantMessage msg,
-        string timestamp,
-        bool hasTrailingProgress,
-        DateTimeOffset now)
-    {
-        var hasPending = HasPendingToolUses(msg.Content);
-        if (hasPending)
-        {
-            _ = hasTrailingProgress;
-            return SessionStatus.Working;
-        }
-
-        return IsEntryRecent(timestamp, 20, now)
-            ? SessionStatus.Working
-            : SessionStatus.WaitingForInput;
-    }
-
-    private static SessionStatus AnalyzeAssistantMessage(AssistantMessage msg, PermissionChecker checker)
-    {
-        var hasToolUse = msg.Content.Any(c => c is ToolUseContent);
-
-        if (hasToolUse)
-        {
-            var allCompleted = CheckAllToolsCompleted(msg.Content);
-            if (allCompleted)
-            {
-                return msg.StopReason switch
-                {
-                    "end_turn" => SessionStatus.WaitingForInput,
-                    "tool_use" => SessionStatus.Working,
-                    "max_tokens" or "stop_sequence" => SessionStatus.WaitingForInput,
-                    _ => SessionStatus.WaitingForInput,
-                };
-            }
-
-            return ArePendingToolsAutoApproved(msg.Content, checker)
-                ? SessionStatus.Working
-                : SessionStatus.NeedsAttention;
-        }
-
-        return msg.StopReason switch
-        {
-            "end_turn" => SessionStatus.WaitingForInput,
-            "max_tokens" or "stop_sequence" => SessionStatus.WaitingForInput,
-            null => SessionStatus.Working,
-            _ => SessionStatus.WaitingForInput,
-        };
-    }
-
-    private static bool CheckAllToolsCompleted(IEnumerable<MessageContent> content)
+    private static bool HasPendingToolUses(IReadOnlyList<MessageContent> content)
     {
         var toolUseIds = new List<string>();
         var toolResultIds = new HashSet<string>(StringComparer.Ordinal);
@@ -183,27 +123,12 @@ public static class StatusAnalyzer
             if (c is ToolUseContent tu) toolUseIds.Add(tu.Id);
             else if (c is ToolResultContent tr) toolResultIds.Add(tr.ToolUseId);
         }
-        if (toolUseIds.Count == 0) return true;
+        if (toolUseIds.Count == 0) return false;
         foreach (var id in toolUseIds)
         {
-            if (!toolResultIds.Contains(id)) return false;
+            if (!toolResultIds.Contains(id)) return true;
         }
-        return true;
-    }
-
-    private static bool HasPendingToolUses(IReadOnlyList<MessageContent> content)
-        => !CheckAllToolsCompleted(content);
-
-    private static bool ArePendingToolsAutoApproved(IReadOnlyList<MessageContent> content, PermissionChecker checker)
-    {
-        var completedIds = CollectCompletedIds(content);
-        foreach (var c in content)
-        {
-            if (c is not ToolUseContent tu) continue;
-            if (completedIds.Contains(tu.Id)) continue;
-            if (!checker.IsAutoApproved(tu.Name, tu.Input)) return false;
-        }
-        return true;
+        return false;
     }
 
     private static bool HasPendingAskUserQuestion(IReadOnlyList<MessageContent> content)
@@ -260,17 +185,18 @@ public static class StatusAnalyzer
 
     private static bool IsEntryRecent(string rfc3339Timestamp, int seconds, DateTimeOffset now)
     {
-        if (string.IsNullOrEmpty(rfc3339Timestamp)) return false;
-
-        if (!DateTimeOffset.TryParse(
-                rfc3339Timestamp,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                out var entryTime))
-        {
-            return false;
-        }
-
+        if (!TryParseTimestamp(rfc3339Timestamp, out var entryTime)) return false;
         return (now - entryTime).TotalSeconds < seconds;
+    }
+
+    private static bool TryParseTimestamp(string rfc3339Timestamp, out DateTimeOffset value)
+    {
+        value = default;
+        if (string.IsNullOrEmpty(rfc3339Timestamp)) return false;
+        return DateTimeOffset.TryParse(
+            rfc3339Timestamp,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out value);
     }
 }

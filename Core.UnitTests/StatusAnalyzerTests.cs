@@ -63,8 +63,8 @@ public class StatusAnalyzerTests
 
     private static TextContent Text(string t) => new() { Text = t };
 
-    private static SessionStatus Status(IReadOnlyList<SessionEntry> entries)
-        => StatusAnalyzer.DetermineStatus(entries, null, FrozenNow);
+    private static SessionStatus Status(IReadOnlyList<SessionEntry> entries, DateTimeOffset? mtime = null)
+        => StatusAnalyzer.DetermineStatus(entries, mtime, FrozenNow);
 
     private static string? PendingTool(IReadOnlyList<SessionEntry> entries)
         => StatusAnalyzer.GetPendingToolName(entries);
@@ -128,8 +128,10 @@ public class StatusAnalyzerTests
     }
 
     [Fact]
-    public void PendingNonAutoApprovedToolIsNeedsAttention()
+    public void PendingToolUseIsWorkingRegardlessOfKind()
     {
+        // Claude writes tool_use to JSONL only after the permission prompt is
+        // resolved, so any pending tool_use means the tool is actually running.
         var entries = new List<SessionEntry>
         {
             Assistant(
@@ -139,7 +141,7 @@ public class StatusAnalyzerTests
                 },
                 "tool_use"),
         };
-        Assert.Equal(SessionStatus.NeedsAttention, Status(entries));
+        Assert.Equal(SessionStatus.Working, Status(entries));
     }
 
     [Fact]
@@ -176,7 +178,7 @@ public class StatusAnalyzerTests
     }
 
     [Fact]
-    public void MixedWithNeedsPermissionIsNeedsAttention()
+    public void MixedWithPendingBashIsWorking()
     {
         var entries = new List<SessionEntry>
         {
@@ -189,7 +191,7 @@ public class StatusAnalyzerTests
                 },
                 "tool_use"),
         };
-        Assert.Equal(SessionStatus.NeedsAttention, Status(entries));
+        Assert.Equal(SessionStatus.Working, Status(entries));
     }
 
     [Fact]
@@ -211,7 +213,7 @@ public class StatusAnalyzerTests
     }
 
     [Fact]
-    public void TrailingProgressPreservesToolStatus()
+    public void TrailingProgressKeepsToolRunningStatus()
     {
         var entries = new List<SessionEntry>
         {
@@ -224,9 +226,7 @@ public class StatusAnalyzerTests
             new UnknownEntry(),
             new UnknownEntry(),
         };
-        var result = Status(entries);
-        Assert.NotEqual(SessionStatus.WaitingForInput, result);
-        Assert.Equal(SessionStatus.NeedsAttention, result);
+        Assert.Equal(SessionStatus.Working, Status(entries));
     }
 
     [Fact]
@@ -336,6 +336,35 @@ public class StatusAnalyzerTests
         Assert.Equal(SessionStatus.WaitingForInput, Status(entries));
     }
 
+    [Fact]
+    public void UserMessageWithStaleFileMtimeIsNeedsAttention()
+    {
+        // User prompt sent, but the JSONL file hasn't been written for > 15s.
+        // In practice this means Claude emitted a permission prompt and the
+        // user hasn't approved/rejected yet — NO tool_use is in the log.
+        var userTime = FrozenNow.AddSeconds(-60);
+        var entries = new List<SessionEntry>
+        {
+            User("try mkdir in D:/test/", @base: MakeBase(userTime)),
+        };
+        var staleMtime = userTime.AddSeconds(1);
+        Assert.Equal(SessionStatus.NeedsAttention, Status(entries, staleMtime));
+    }
+
+    [Fact]
+    public void UserMessageWithFreshFileMtimeIsWorking()
+    {
+        // User just prompted — file is actively being written (Claude streaming
+        // a response). Not a permission hang.
+        var userTime = FrozenNow.AddSeconds(-3);
+        var entries = new List<SessionEntry>
+        {
+            User("Hello", @base: MakeBase(userTime)),
+        };
+        var freshMtime = FrozenNow.AddSeconds(-2);
+        Assert.Equal(SessionStatus.Working, Status(entries, freshMtime));
+    }
+
     // ---------- GetPendingToolName tests ----------
 
     [Fact]
@@ -354,7 +383,7 @@ public class StatusAnalyzerTests
     }
 
     [Fact]
-    public void GetPendingToolNameAutoApproved()
+    public void GetPendingToolNameReportsAnyPendingTool()
     {
         var entries = new List<SessionEntry>
         {
@@ -365,7 +394,7 @@ public class StatusAnalyzerTests
                 },
                 "tool_use"),
         };
-        Assert.Null(PendingTool(entries));
+        Assert.Equal("Read", PendingTool(entries));
     }
 
     [Fact]
