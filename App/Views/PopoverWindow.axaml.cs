@@ -40,7 +40,17 @@ public partial class PopoverWindow : Window
             PersistWindowState();
         };
         PositionChanged += (_, _) => PersistWindowState();
-        Closing += (_, _) => PersistWindowState();
+        Closing += OnWindowClosing;
+    }
+
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        PersistWindowState();
+        if (!App.IsQuitting)
+        {
+            e.Cancel = true;
+            Hide();
+        }
     }
 
     private void RestoreWindowState()

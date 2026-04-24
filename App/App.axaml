@@ -2,9 +2,25 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ClaudeMonitor.App.App"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.Styles>
         <FluentTheme />
     </Application.Styles>
+
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="/Assets/ClaudeMonitor.ico"
+                      ToolTipText="Claude Monitor"
+                      Clicked="OnTrayClicked">
+                <TrayIcon.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Show" Click="OnTrayShowClick" />
+                        <NativeMenuItem Header="Hide" Click="OnTrayHideClick" />
+                        <NativeMenuItem Header="-" />
+                        <NativeMenuItem Header="Quit" Click="OnTrayQuitClick" />
+                    </NativeMenu>
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
 </Application>
