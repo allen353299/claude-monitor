@@ -27,14 +27,14 @@ public sealed class MemoryReader : IMemoryReader
         if (!Directory.Exists(_projectsRoot)) return Array.Empty<MemoryProject>();
 
         var projects = new List<MemoryProject>();
-        foreach (var projectDir in Directory.EnumerateDirectories(_projectsRoot))
+        foreach (var projectDir in EnumerateDirectoriesSafe(_projectsRoot))
         {
             ct.ThrowIfCancellationRequested();
             var memoryDir = Path.Combine(projectDir, "memory");
             if (!Directory.Exists(memoryDir)) continue;
 
             var files = new List<MemoryFile>();
-            foreach (var file in Directory.EnumerateFiles(memoryDir, "*.md"))
+            foreach (var file in EnumerateFilesSafe(memoryDir, "*.md"))
             {
                 ct.ThrowIfCancellationRequested();
                 try
@@ -63,5 +63,19 @@ public sealed class MemoryReader : IMemoryReader
 
         projects.Sort((a, b) => string.Compare(a.DecodedPath, b.DecodedPath, StringComparison.OrdinalIgnoreCase));
         return projects;
+    }
+
+    private static IEnumerable<string> EnumerateDirectoriesSafe(string root)
+    {
+        try { return Directory.EnumerateDirectories(root); }
+        catch (IOException) { return Array.Empty<string>(); }
+        catch (UnauthorizedAccessException) { return Array.Empty<string>(); }
+    }
+
+    private static IEnumerable<string> EnumerateFilesSafe(string dir, string pattern)
+    {
+        try { return Directory.EnumerateFiles(dir, pattern); }
+        catch (IOException) { return Array.Empty<string>(); }
+        catch (UnauthorizedAccessException) { return Array.Empty<string>(); }
     }
 }
