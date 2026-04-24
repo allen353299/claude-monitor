@@ -23,9 +23,16 @@ public sealed partial class DashboardViewModel : ObservableObject
         History = new HistoryTabViewModel(historyReader);
         Memory = new MemoryTabViewModel(memoryReader);
         Cost = new CostTabViewModel(costReader);
-        _ = History.RefreshAsync();
-        _ = Memory.RefreshAsync();
-        _ = Cost.RefreshAsync();
+    }
+
+    partial void OnSelectedTabIndexChanged(int value)
+    {
+        switch (value)
+        {
+            case 1: _ = History.RefreshAsync(); break;
+            case 2: _ = Cost.RefreshAsync(); break;
+            case 3: _ = Memory.RefreshAsync(); break;
+        }
     }
 }
 

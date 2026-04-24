@@ -77,10 +77,28 @@ public partial class PopoverWindow : Window
     {
         if (!PersistedWindowStateStore.TryLoad(out var state)) return;
         WindowStartupLocation = WindowStartupLocation.Manual;
-        Position = new PixelPoint(state.X, state.Y);
+        Position = ClampToVisibleScreens(new PixelPoint(state.X, state.Y), (int)state.Width, (int)state.Height);
         Width = state.Width;
         Height = state.Height;
         Topmost = state.Topmost;
+    }
+
+    private PixelPoint ClampToVisibleScreens(PixelPoint desired, int width, int height)
+    {
+        var screens = Screens;
+        if (screens is null || screens.All.Count == 0) return desired;
+        foreach (var s in screens.All)
+        {
+            var area = s.WorkingArea;
+            if (desired.X + width > area.X && desired.X < area.X + area.Width
+                && desired.Y + height > area.Y && desired.Y < area.Y + area.Height)
+            {
+                return desired;
+            }
+        }
+        var primary = screens.Primary ?? screens.All[0];
+        var pa = primary.WorkingArea;
+        return new PixelPoint(pa.X + (pa.Width - width) / 2, pa.Y + (pa.Height - height) / 2);
     }
 
     private void PersistWindowState()

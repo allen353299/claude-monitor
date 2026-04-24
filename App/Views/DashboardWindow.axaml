@@ -96,7 +96,7 @@
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                         <TextBox Grid.Column="0"
                                  Text="{Binding SearchText}"
-                                 Watermark="Search display / project / session id..."
+                                 PlaceholderText="Search display / project / session id..."
                                  FontFamily="{StaticResource MonoFont}"
                                  FontSize="11" />
                         <Button Grid.Column="1"
@@ -249,7 +249,15 @@
                 </Grid>
             </TabItem>
             <TabItem Header="MEMORY">
-                <Grid ColumnDefinitions="260,*" DataContext="{Binding Memory}" Margin="12">
+                <Grid RowDefinitions="Auto,*" DataContext="{Binding Memory}" Margin="12">
+                    <Button Grid.Row="0"
+                            Content="Refresh"
+                            Command="{Binding RefreshCommand}"
+                            HorizontalAlignment="Right"
+                            Margin="0,0,0,8"
+                            FontFamily="{StaticResource MonoFont}"
+                            FontSize="11" />
+                    <Grid Grid.Row="1" ColumnDefinitions="260,*">
                     <Border Grid.Column="0"
                             BorderBrush="#222222"
                             BorderThickness="1"
@@ -319,6 +327,7 @@
                                                      Padding="12" />
                             </ScrollViewer>
                         </Border>
+                    </Grid>
                     </Grid>
                 </Grid>
             </TabItem>

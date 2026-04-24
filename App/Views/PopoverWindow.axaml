@@ -9,7 +9,7 @@
         x:DataType="vm:PopoverViewModel"
         Width="320" Height="400"
         MinWidth="240" MinHeight="80"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         Topmost="True"

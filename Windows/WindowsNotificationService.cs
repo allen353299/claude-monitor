@@ -15,6 +15,8 @@ public sealed class WindowsNotificationService : INotificationService
 
     public void NotifyAttention(SessionId sessionId, string title, string body)
     {
+        MessageBeep(MB_ICONASTERISK);
+
         var hwnd = _getWindowHandle();
         if (hwnd == IntPtr.Zero) return;
 
@@ -22,7 +24,7 @@ public sealed class WindowsNotificationService : INotificationService
         {
             cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
             hwnd = hwnd,
-            dwFlags = FLASHW_TRAY | FLASHW_TIMERNOFG,
+            dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG,
             uCount = uint.MaxValue,
             dwTimeout = 0,
         };
@@ -39,9 +41,16 @@ public sealed class WindowsNotificationService : INotificationService
         public uint dwTimeout;
     }
 
+    private const uint FLASHW_CAPTION = 0x00000001;
     private const uint FLASHW_TRAY = 0x00000002;
+    private const uint FLASHW_ALL = FLASHW_CAPTION | FLASHW_TRAY;
     private const uint FLASHW_TIMERNOFG = 0x0000000C;
 
     [DllImport("user32.dll")]
     private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+
+    private const uint MB_ICONASTERISK = 0x00000040;
+
+    [DllImport("user32.dll")]
+    private static extern bool MessageBeep(uint uType);
 }

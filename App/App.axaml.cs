@@ -63,9 +63,11 @@ public partial class App : Application
         _dashboard.Activate();
     }
 
-    private void OnTrayQuitClick(object? sender, EventArgs e)
+    private async void OnTrayQuitClick(object? sender, EventArgs e)
     {
         IsQuitting = true;
+        if (_popoverVm is not null)
+            await _popoverVm.DisposeAsync();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
     }
