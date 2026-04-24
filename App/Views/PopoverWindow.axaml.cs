@@ -30,6 +30,7 @@ public partial class PopoverWindow : Window
         UpdateTaskbarVisibility();
         Opened += (_, _) =>
         {
+            EnsurePositionOnVisibleScreen();
             ApplyTopmost();
             StartTopmostTimer();
             SyncCompactMode();
@@ -77,28 +78,32 @@ public partial class PopoverWindow : Window
     {
         if (!PersistedWindowStateStore.TryLoad(out var state)) return;
         WindowStartupLocation = WindowStartupLocation.Manual;
-        Position = ClampToVisibleScreens(new PixelPoint(state.X, state.Y), (int)state.Width, (int)state.Height);
+        Position = new PixelPoint(state.X, state.Y);
         Width = state.Width;
         Height = state.Height;
         Topmost = state.Topmost;
     }
 
-    private PixelPoint ClampToVisibleScreens(PixelPoint desired, int width, int height)
+    private void EnsurePositionOnVisibleScreen()
     {
         var screens = Screens;
-        if (screens is null || screens.All.Count == 0) return desired;
+        if (screens is null || screens.All.Count == 0) return;
+
+        var width = (int)Bounds.Width;
+        var height = (int)Bounds.Height;
         foreach (var s in screens.All)
         {
             var area = s.WorkingArea;
-            if (desired.X + width > area.X && desired.X < area.X + area.Width
-                && desired.Y + height > area.Y && desired.Y < area.Y + area.Height)
+            if (Position.X + width > area.X && Position.X < area.X + area.Width
+                && Position.Y + height > area.Y && Position.Y < area.Y + area.Height)
             {
-                return desired;
+                return;
             }
         }
+
         var primary = screens.Primary ?? screens.All[0];
         var pa = primary.WorkingArea;
-        return new PixelPoint(pa.X + (pa.Width - width) / 2, pa.Y + (pa.Height - height) / 2);
+        Position = new PixelPoint(pa.X + (pa.Width - width) / 2, pa.Y + (pa.Height - height) / 2);
     }
 
     private void PersistWindowState()

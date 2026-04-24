@@ -60,7 +60,7 @@ public sealed class WindowsSessionActivator : ISessionActivator
 
         if (foundByAncestor != IntPtr.Zero) return foundByAncestor;
 
-        return FindWindowByTitle(new[] { "Claude Code", "claude" });
+        return FindWindowByTitle(new[] { "Claude Code" });
     }
 
     private const int WindowTitleBufferSize = 256;
@@ -69,10 +69,13 @@ public sealed class WindowsSessionActivator : ISessionActivator
     {
         IntPtr found = IntPtr.Zero;
         var buffer = new System.Text.StringBuilder(WindowTitleBufferSize);
+        var selfPid = Environment.ProcessId;
 
         EnumWindows((hwnd, _) =>
         {
             if (!IsWindowVisible(hwnd)) return true;
+            GetWindowThreadProcessId(hwnd, out var wpid);
+            if ((int)wpid == selfPid) return true;
             buffer.Clear();
             GetWindowTextW(hwnd, buffer, buffer.Capacity);
             var title = buffer.ToString();

@@ -23,9 +23,9 @@ public sealed class CostReader : ICostReader
         var sessions = new List<SessionCost>();
         double grand = 0;
 
-        foreach (var projectDir in Directory.EnumerateDirectories(_projectsRoot))
+        foreach (var projectDir in EnumerateDirectoriesSafe(_projectsRoot))
         {
-            foreach (var file in Directory.EnumerateFiles(projectDir, "*.jsonl"))
+            foreach (var file in EnumerateFilesSafe(projectDir, "*.jsonl"))
             {
                 ct.ThrowIfCancellationRequested();
                 var cost = await ParseFileAsync(file, ct).ConfigureAwait(false);
@@ -37,6 +37,20 @@ public sealed class CostReader : ICostReader
 
         sessions.Sort((a, b) => b.UsdTotal.CompareTo(a.UsdTotal));
         return new CostReport(sessions, grand);
+    }
+
+    private static IEnumerable<string> EnumerateDirectoriesSafe(string root)
+    {
+        try { return Directory.EnumerateDirectories(root); }
+        catch (IOException) { return Array.Empty<string>(); }
+        catch (UnauthorizedAccessException) { return Array.Empty<string>(); }
+    }
+
+    private static IEnumerable<string> EnumerateFilesSafe(string dir, string pattern)
+    {
+        try { return Directory.EnumerateFiles(dir, pattern); }
+        catch (IOException) { return Array.Empty<string>(); }
+        catch (UnauthorizedAccessException) { return Array.Empty<string>(); }
     }
 
     private async Task<SessionCost?> ParseFileAsync(string filePath, CancellationToken ct)

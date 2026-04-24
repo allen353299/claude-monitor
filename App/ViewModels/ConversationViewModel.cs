@@ -114,6 +114,13 @@ public sealed partial class ConversationViewModel : ObservableObject
                         : JsonSerializer.Serialize(tu.Input, new JsonSerializerOptions { WriteIndented = true });
                     yield return new MessageVm(MessageKind.ToolUse, $"tool_use · {tu.Name}", input);
                     break;
+                case ToolResultContent tr:
+                    yield return new MessageVm(MessageKind.ToolResult,
+                        tr.IsError == true ? "tool_result (error)" : "tool_result", tr.Content);
+                    break;
+                default:
+                    yield return new MessageVm(MessageKind.System, c.GetType().Name, "");
+                    break;
             }
         }
     }
