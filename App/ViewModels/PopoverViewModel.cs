@@ -11,7 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace ClaudeMonitor.App.ViewModels;
 
-public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
+public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposable
 {
     private static readonly TimeSpan TimeBasedPropertyRefreshInterval = TimeSpan.FromMinutes(1);
 
@@ -27,7 +27,14 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
     public bool IsEmpty => Sessions.Count == 0;
 
+    [ObservableProperty] private bool _isCompact;
+
     public IAsyncRelayCommand<string> ActivateSessionCommand { get; }
+
+    partial void OnIsCompactChanged(bool value)
+    {
+        foreach (var vm in Sessions) vm.IsCompact = value;
+    }
 
     public PopoverViewModel(ISessionScanner scanner, ISessionActivator activator)
     {
@@ -41,7 +48,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
         foreach (var s in _scanner.CurrentSessions)
         {
-            var vm = new SessionVm { Id = s.Id };
+            var vm = new SessionVm { Id = s.Id, IsCompact = IsCompact };
             vm.UpdateFrom(s);
             Sessions.Add(vm);
         }
@@ -99,7 +106,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
             }
             else
             {
-                var vm = new SessionVm { Id = session.Id };
+                var vm = new SessionVm { Id = session.Id, IsCompact = IsCompact };
                 vm.UpdateFrom(session);
                 Sessions.Add(vm);
             }

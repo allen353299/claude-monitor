@@ -8,7 +8,7 @@
         x:Class="ClaudeMonitor.App.Views.PopoverWindow"
         x:DataType="vm:PopoverViewModel"
         Width="320" Height="400"
-        MinWidth="240" MinHeight="200"
+        MinWidth="240" MinHeight="80"
         SystemDecorations="None"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
@@ -77,6 +77,70 @@
                 </Animation>
             </Style.Animations>
         </Style>
+
+        <Style Selector="Ellipse.spin-tail">
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="INFINITE" Easing="LinearEasing">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="RotateTransform.Angle" Value="0.0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="RotateTransform.Angle" Value="360.0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <Style Selector="TextBlock.wave-1">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="25%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                    <KeyFrame Cue="75%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="TextBlock.wave-2">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="33%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="58%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="TextBlock.wave-3">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="INFINITE">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="66%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                    <KeyFrame Cue="91%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.25" /></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <Style Selector="Button.header-action">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Grid#DragHandle:pointerover Button.header-action">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+
+        <Style Selector="Border.card-compact">
+            <Setter Property="Padding" Value="16,4" />
+        </Style>
+        <Style Selector="StackPanel.card-compact">
+            <Setter Property="Spacing" Value="0" />
+        </Style>
     </Window.Styles>
 
     <Grid>
@@ -92,7 +156,7 @@
                   Cursor="SizeAll"
                   PointerPressed="OnDragHandlePressed"
                   ColumnDefinitions="*,Auto,Auto"
-                  Margin="16,10">
+                  Margin="14,3">
                 <TextBlock Grid.Column="0"
                            Text="{Binding SessionCountText}"
                            FontFamily="{StaticResource MonoFont}"
@@ -101,15 +165,16 @@
                            VerticalAlignment="Center" />
                 <Button Grid.Column="1"
                         x:Name="PinButton"
+                        Classes="header-action"
                         Content="&#xE840;"
                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                        Width="20" Height="20"
+                        Width="16" Height="16"
                         Padding="0"
                         Margin="0,0,4,0"
                         Background="Transparent"
                         Foreground="#ffffff"
                         BorderThickness="0"
-                        FontSize="13"
+                        FontSize="11"
                         Cursor="Hand"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Center"
@@ -121,13 +186,14 @@
                     </Button.Styles>
                 </Button>
                 <Button Grid.Column="2"
+                        Classes="header-action"
                         Content="×"
-                        Width="20" Height="20"
+                        Width="16" Height="16"
                         Padding="0"
                         Background="Transparent"
                         Foreground="#666666"
                         BorderThickness="0"
-                        FontSize="14"
+                        FontSize="12"
                         Cursor="Hand"
                         VerticalContentAlignment="Center"
                         HorizontalContentAlignment="Center"
@@ -201,14 +267,38 @@
                                                    Opacity="0"
                                                    IsHitTestVisible="False"
                                                    Classes.glow-done="{Binding ShouldGlowDone}" />
-                                        <Border Padding="16,9">
-                                    <StackPanel Spacing="3">
+                                        <Border Padding="16,9"
+                                                Classes.card-compact="{Binding IsCompact}">
+                                    <StackPanel Spacing="3"
+                                                Classes.card-compact="{Binding IsCompact}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Rectangle Width="6" Height="6"
-                                                       Fill="{Binding StatusColor}"
-                                                       Classes.dot-urgent="{Binding ShouldGlowUrgent}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Text="{Binding SessionName}"
+                                            <Panel Width="8" Height="8" VerticalAlignment="Center"
+                                                   IsVisible="{Binding !IsWorking}">
+                                                <Rectangle Width="6" Height="6"
+                                                           Fill="{Binding StatusColor}"
+                                                           Classes.dot-urgent="{Binding ShouldGlowUrgent}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                            </Panel>
+                                            <Panel Width="12" Height="12"
+                                                   VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsWorking}">
+                                                <Ellipse Width="12" Height="12"
+                                                         Stroke="{x:Static theme:StatusPalette.Working}"
+                                                         StrokeThickness="1.5"
+                                                         Opacity="0.22" />
+                                                <Ellipse Width="12" Height="12"
+                                                         Stroke="{x:Static theme:StatusPalette.Working}"
+                                                         StrokeThickness="1.5"
+                                                         StrokeLineCap="Round"
+                                                         StrokeDashArray="9,100"
+                                                         Classes="spin-tail">
+                                                    <Ellipse.RenderTransform>
+                                                        <RotateTransform />
+                                                    </Ellipse.RenderTransform>
+                                                </Ellipse>
+                                            </Panel>
+                                            <TextBlock Text="{Binding PrimaryLabel}"
                                                        FontFamily="{StaticResource MonoFont}"
                                                        FontSize="12"
                                                        FontWeight="SemiBold"
@@ -219,7 +309,36 @@
                                                        FontFamily="{StaticResource MonoFont}"
                                                        FontSize="10"
                                                        Foreground="#666666"
-                                                       VerticalAlignment="Center" />
+                                                       VerticalAlignment="Center"
+                                                       IsVisible="{Binding !IsWorking}" />
+                                            <StackPanel Orientation="Horizontal"
+                                                        Spacing="0"
+                                                        VerticalAlignment="Center"
+                                                        IsVisible="{Binding IsWorking}">
+                                                <TextBlock Text="Processing"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="10"
+                                                           Foreground="{x:Static theme:StatusPalette.Working}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="."
+                                                           Classes="wave-1"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="10"
+                                                           Foreground="{x:Static theme:StatusPalette.Working}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="."
+                                                           Classes="wave-2"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="10"
+                                                           Foreground="{x:Static theme:StatusPalette.Working}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="."
+                                                           Classes="wave-3"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="10"
+                                                           Foreground="{x:Static theme:StatusPalette.Working}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
                                             <TextBlock Text="{Binding PendingTool}"
                                                        FontFamily="{StaticResource MonoFont}"
                                                        FontSize="10"
@@ -227,14 +346,14 @@
                                                        VerticalAlignment="Center"
                                                        IsVisible="{Binding PendingTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                         </StackPanel>
-                                        <TextBlock Text="{Binding TitleOrFirstPrompt}"
+                                        <TextBlock Text="{Binding ProjectPath}"
                                                    Margin="14,0,0,0"
                                                    FontFamily="{StaticResource MonoFont}"
                                                    FontSize="11"
                                                    Foreground="#888888"
                                                    TextWrapping="NoWrap"
                                                    TextTrimming="CharacterEllipsis"
-                                                   IsVisible="{Binding HasTitleOrFirstPrompt}" />
+                                                   IsVisible="{Binding ShowProjectPath}" />
                                         <TextBlock Text="{Binding RecapOrLatest}"
                                                    Margin="14,0,0,0"
                                                    FontFamily="{StaticResource MonoFont}"
@@ -242,7 +361,7 @@
                                                    Foreground="#666666"
                                                    TextWrapping="NoWrap"
                                                    TextTrimming="CharacterEllipsis"
-                                                   IsVisible="{Binding HasRecapOrLatest}" />
+                                                   IsVisible="{Binding ShowRecapOrLatest}" />
                                     </StackPanel>
                                         </Border>
                                     </Grid>
