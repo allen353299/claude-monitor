@@ -16,20 +16,14 @@ public readonly record struct JsonlPath(string Value)
 
     public bool TryGetLastWrite(out DateTimeOffset lastWriteUtc)
     {
+        lastWriteUtc = default;
         try
         {
+            if (!File.Exists(Value)) return false;
             lastWriteUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(Value), TimeSpan.Zero);
             return true;
         }
-        catch (IOException)
-        {
-            lastWriteUtc = default;
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            lastWriteUtc = default;
-            return false;
-        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
     }
 }
