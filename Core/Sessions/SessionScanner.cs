@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Text.Json;
 using ClaudeMonitor.Core.Models;
+using ClaudeMonitor.Core.Platform;
 
 namespace ClaudeMonitor.Core.Sessions;
 
@@ -92,55 +91,8 @@ public sealed class SessionScanner : ISessionScanner
 
     private HashSet<string> GetLivePidSessionIds()
     {
-        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var sessionsDir = Path.Combine(_claudeHome, "sessions");
-        if (!Directory.Exists(sessionsDir)) return result;
-
-        IEnumerable<string> files;
-        try { files = Directory.EnumerateFiles(sessionsDir, "*.json"); }
-        catch (IOException) { return result; }
-        catch (UnauthorizedAccessException) { return result; }
-
-        foreach (var file in files)
-        {
-            var name = Path.GetFileNameWithoutExtension(file);
-            if (!int.TryParse(name, out var pid)) continue;
-            if (!IsProcessAlive(pid)) continue;
-
-            string? sid = null;
-            try
-            {
-                using var stream = File.OpenRead(file);
-                using var doc = JsonDocument.Parse(stream);
-                if (doc.RootElement.ValueKind == JsonValueKind.Object
-                    && doc.RootElement.TryGetProperty("sessionId", out var el)
-                    && el.ValueKind == JsonValueKind.String)
-                {
-                    sid = el.GetString();
-                }
-            }
-            catch (IOException) { continue; }
-            catch (JsonException) { continue; }
-            catch (UnauthorizedAccessException) { continue; }
-
-            if (!string.IsNullOrEmpty(sid)) result.Add(sid);
-        }
-
-        return result;
-    }
-
-    private static bool IsProcessAlive(int pid)
-    {
-        try
-        {
-            using var p = Process.GetProcessById(pid);
-            if (p.HasExited) return false;
-            var name = p.ProcessName.ToLowerInvariant();
-            return name.Contains("claude") || name.Contains("node");
-        }
-        catch (ArgumentException) { return false; }
-        catch (InvalidOperationException) { return false; }
-        catch (System.ComponentModel.Win32Exception) { return false; }
+        var snapshot = LiveSessionIndex.Snapshot(_claudeHome);
+        return new HashSet<string>(snapshot.Keys, StringComparer.OrdinalIgnoreCase);
     }
 
     private IEnumerable<string> EnumerateJsonlFiles()
