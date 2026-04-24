@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
-using System;
 using ClaudeMonitor.Core.Models;
 using ClaudeMonitor.Core.Platform;
 using ClaudeMonitor.Core.Sessions;
@@ -18,6 +17,7 @@ namespace ClaudeMonitor.App.ViewModels;
 public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 {
     private const int PixelColumns = 28;
+    private static readonly TimeSpan TimeBasedPropertyRefreshInterval = TimeSpan.FromMinutes(1);
 
     private static readonly IBrush WorkingBrush = new SolidColorBrush(Color.Parse("#22c55e"));
     private static readonly IBrush PermissionBrush = new SolidColorBrush(Color.Parse("#ff6600"));
@@ -64,7 +64,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         SortSessions();
         RefreshPixelBlocks();
 
-        _ageTimer = new DispatcherTimer(TimeSpan.FromMinutes(1), DispatcherPriority.Background, (_, _) =>
+        _ageTimer = new DispatcherTimer(TimeBasedPropertyRefreshInterval, DispatcherPriority.Background, (_, _) =>
         {
             foreach (var vm in Sessions)
             {

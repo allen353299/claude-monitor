@@ -55,10 +55,12 @@ public sealed class WindowsSessionActivator : ISessionActivator
         return FindWindowByTitle(new[] { "Claude Code", "claude" });
     }
 
+    private const int WindowTitleBufferSize = 256;
+
     private static IntPtr FindWindowByTitle(string[] keywords)
     {
         IntPtr found = IntPtr.Zero;
-        var buffer = new System.Text.StringBuilder(256);
+        var buffer = new System.Text.StringBuilder(WindowTitleBufferSize);
 
         EnumWindows((hwnd, _) =>
         {

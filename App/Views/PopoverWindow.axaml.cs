@@ -10,6 +10,8 @@ namespace ClaudeMonitor.App.Views;
 
 public partial class PopoverWindow : Window
 {
+    private static readonly TimeSpan TopmostReapplyInterval = TimeSpan.FromSeconds(2);
+
     private DispatcherTimer? _topmostTimer;
 
     public PopoverWindow()
@@ -79,7 +81,7 @@ public partial class PopoverWindow : Window
     private void StartTopmostTimer()
     {
         if (_topmostTimer != null) return;
-        _topmostTimer = new DispatcherTimer(TimeSpan.FromSeconds(2), DispatcherPriority.Background, (_, _) => ApplyTopmost());
+        _topmostTimer = new DispatcherTimer(TopmostReapplyInterval, DispatcherPriority.Background, (_, _) => ApplyTopmost());
         _topmostTimer.Start();
     }
 

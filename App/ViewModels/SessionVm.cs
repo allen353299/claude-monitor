@@ -8,6 +8,8 @@ namespace ClaudeMonitor.App.ViewModels;
 
 public sealed partial class SessionVm : ObservableObject
 {
+    private static readonly TimeSpan DoneRecencyWindow = TimeSpan.FromHours(1);
+
     [ObservableProperty] private string _id = "";
     [ObservableProperty] private string _sessionName = "";
     [ObservableProperty] private string? _customTitle;
@@ -27,7 +29,7 @@ public sealed partial class SessionVm : ObservableObject
     public bool IsUrgent => Status == SessionStatus.NeedsAttention;
 
     public bool IsDoneRecent => Status == SessionStatus.WaitingForInput
-        && (DateTimeOffset.UtcNow - LastActivity) < TimeSpan.FromHours(1);
+        && (DateTimeOffset.UtcNow - LastActivity) < DoneRecencyWindow;
 
     private bool IsAcknowledged => _acknowledgedAt.HasValue && _acknowledgedAt.Value >= LastActivity;
 

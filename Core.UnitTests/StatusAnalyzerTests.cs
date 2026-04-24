@@ -130,8 +130,6 @@ public class StatusAnalyzerTests
     [Fact]
     public void PendingToolUseIsWorkingRegardlessOfKind()
     {
-        // Claude writes tool_use to JSONL only after the permission prompt is
-        // resolved, so any pending tool_use means the tool is actually running.
         var entries = new List<SessionEntry>
         {
             Assistant(
@@ -339,9 +337,6 @@ public class StatusAnalyzerTests
     [Fact]
     public void UserMessageWithStaleFileMtimeIsNeedsAttention()
     {
-        // User prompt sent, but the JSONL file hasn't been written for > 15s.
-        // In practice this means Claude emitted a permission prompt and the
-        // user hasn't approved/rejected yet — NO tool_use is in the log.
         var userTime = FrozenNow.AddSeconds(-60);
         var entries = new List<SessionEntry>
         {
@@ -354,8 +349,6 @@ public class StatusAnalyzerTests
     [Fact]
     public void UserMessageWithFreshFileMtimeIsWorking()
     {
-        // User just prompted — file is actively being written (Claude streaming
-        // a response). Not a permission hang.
         var userTime = FrozenNow.AddSeconds(-3);
         var entries = new List<SessionEntry>
         {

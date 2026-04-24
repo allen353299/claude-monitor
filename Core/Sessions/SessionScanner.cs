@@ -9,7 +9,6 @@ public sealed class SessionScanner : ISessionScanner
 {
     private readonly string _claudeHome;
     private readonly string _projectsRoot;
-    private readonly TimeSpan _activeWindow;
     private readonly TimeSpan _fallbackInterval;
     private readonly TimeSpan _debounce;
 
@@ -23,14 +22,12 @@ public sealed class SessionScanner : ISessionScanner
 
     public SessionScanner(
         string? claudeHome = null,
-        TimeSpan? activeWindow = null,
         TimeSpan? fallbackInterval = null,
         TimeSpan? debounce = null)
     {
         _claudeHome = claudeHome
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
         _projectsRoot = Path.Combine(_claudeHome, "projects");
-        _activeWindow = activeWindow ?? TimeSpan.FromMinutes(60);
         _fallbackInterval = fallbackInterval ?? TimeSpan.FromSeconds(5);
         _debounce = debounce ?? TimeSpan.FromMilliseconds(200);
     }

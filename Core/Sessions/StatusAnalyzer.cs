@@ -6,6 +6,8 @@ namespace ClaudeMonitor.Core.Sessions;
 public static class StatusAnalyzer
 {
     private const int PermissionStaleSeconds = 15;
+    private const int UserRecencySeconds = 30;
+    private const int AssistantRecencySeconds = 20;
 
     public static SessionStatus DetermineStatus(
         IReadOnlyList<SessionEntry> entries,
@@ -35,7 +37,7 @@ public static class StatusAnalyzer
         {
             if (ue.Message.IsToolResult)
             {
-                return IsEntryRecent(ue.Base.Timestamp, 30, nowValue)
+                return IsEntryRecent(ue.Base.Timestamp, UserRecencySeconds, nowValue)
                     ? SessionStatus.Working
                     : SessionStatus.WaitingForInput;
             }
@@ -46,7 +48,7 @@ public static class StatusAnalyzer
                 return SessionStatus.NeedsAttention;
             }
 
-            return IsEntryRecent(ue.Base.Timestamp, 30, nowValue)
+            return IsEntryRecent(ue.Base.Timestamp, UserRecencySeconds, nowValue)
                 ? SessionStatus.Working
                 : SessionStatus.WaitingForInput;
         }
@@ -59,7 +61,7 @@ public static class StatusAnalyzer
             return SessionStatus.NeedsAttention;
         }
 
-        if (IsAssistantAskingQuestion(msg) && !IsEntryRecent(ae.Base.Timestamp, 20, nowValue))
+        if (IsAssistantAskingQuestion(msg) && !IsEntryRecent(ae.Base.Timestamp, AssistantRecencySeconds, nowValue))
         {
             return SessionStatus.NeedsAttention;
         }
@@ -74,7 +76,7 @@ public static class StatusAnalyzer
             "end_turn" => SessionStatus.WaitingForInput,
             "max_tokens" or "stop_sequence" => SessionStatus.WaitingForInput,
             "tool_use" => SessionStatus.Working,
-            null => IsEntryRecent(ae.Base.Timestamp, 20, nowValue)
+            null => IsEntryRecent(ae.Base.Timestamp, AssistantRecencySeconds, nowValue)
                 ? SessionStatus.Working
                 : SessionStatus.WaitingForInput,
             _ => SessionStatus.WaitingForInput,
