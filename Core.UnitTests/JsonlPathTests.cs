@@ -65,12 +65,23 @@ public class JsonlPathTests
     }
 
     [Fact]
-    public void Equality_IsCaseSensitive()
+    public void Equality_IsCaseInsensitiveOnWindows()
     {
         if (!OperatingSystem.IsWindows()) return;
-        // Case preservation means equality is case-sensitive — document this.
+        // FileSystemWatcher and Directory.Enumerate can return the same file with
+        // different casing — the struct must hash/compare NTFS-style so the
+        // dictionaries keyed by JsonlPath do not end up with duplicate entries.
         var a = JsonlPath.From(@"D:\Git\Foo.jsonl");
         var b = JsonlPath.From(@"D:\git\foo.jsonl");
-        Assert.NotEqual(a, b);
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+    }
+
+    [Fact]
+    public void DefaultInstance_HashCodeAndEqualsDoNotThrow()
+    {
+        var def = default(JsonlPath);
+        _ = def.GetHashCode();
+        Assert.Equal(def, default(JsonlPath));
     }
 }

@@ -14,6 +14,17 @@ public readonly record struct JsonlPath(string Value)
         return new JsonlPath(value);
     }
 
+    public bool Equals(JsonlPath other) =>
+        OperatingSystem.IsWindows()
+            ? string.Equals(Value, other.Value, StringComparison.OrdinalIgnoreCase)
+            : string.Equals(Value, other.Value, StringComparison.Ordinal);
+
+    public override int GetHashCode() =>
+        Value is null ? 0
+            : OperatingSystem.IsWindows()
+                ? Value.GetHashCode(StringComparison.OrdinalIgnoreCase)
+                : Value.GetHashCode(StringComparison.Ordinal);
+
     public bool TryGetLastWrite(out DateTimeOffset lastWriteUtc)
     {
         lastWriteUtc = default;
