@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using ClaudeMonitor.Core.Sessions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -37,7 +38,7 @@ public sealed partial class MemoryTabViewModel : ObservableObject
             foreach (var p in projects) Projects.Add(new MemoryProjectVm(p));
             SelectedProject = Projects.Count > 0 ? Projects[0] : null;
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
             Error = ex.Message;
         }
@@ -49,7 +50,7 @@ public sealed partial class MemoryTabViewModel : ObservableObject
 
     partial void OnSelectedProjectChanged(MemoryProjectVm? value)
     {
-        SelectedFile = value?.Files.Count > 0 ? value.Files[0] : null;
+        SelectedFile = value is { Files.Count: > 0 } ? value.Files[0] : null;
     }
 }
 

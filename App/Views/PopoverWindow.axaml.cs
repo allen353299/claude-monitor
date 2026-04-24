@@ -159,18 +159,12 @@ public partial class PopoverWindow : Window
     {
         if (!OperatingSystem.IsWindows()) return;
 
-        try
-        {
-            var hwnd = TryGetNativeHandle();
-            if (hwnd == IntPtr.Zero) return;
+        var hwnd = TryGetNativeHandle();
+        if (hwnd == IntPtr.Zero) return;
 
-            var insertAfter = Topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
-            SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        }
-        catch
-        {
-        }
+        var insertAfter = Topmost ? HWND_TOPMOST : HWND_NOTOPMOST;
+        SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
     private IntPtr TryGetNativeHandle()

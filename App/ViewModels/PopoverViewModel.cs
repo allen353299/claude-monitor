@@ -109,13 +109,7 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
             vm.Acknowledge();
             Sessions.Sort(SessionVmRankComparer.Default);
         }
-        try
-        {
-            await _activator.ActivateAsync(id).ConfigureAwait(false);
-        }
-        catch
-        {
-        }
+        await _activator.ActivateAsync(id).ConfigureAwait(false);
     }
 
     private void OnSessionsChanged(object? sender, NotifyCollectionChangedEventArgs e)

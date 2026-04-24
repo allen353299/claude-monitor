@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using ClaudeMonitor.Core.Sessions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,7 +13,10 @@ public sealed partial class CostTabViewModel : ObservableObject
 {
     private readonly ICostReader _reader;
 
-    [ObservableProperty] private double _grandTotalUsd;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(GrandTotalText))]
+    private double _grandTotalUsd;
+
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _error;
 
@@ -37,9 +42,12 @@ public sealed partial class CostTabViewModel : ObservableObject
             Sessions.Clear();
             foreach (var s in report.Sessions) Sessions.Add(new SessionCostVm(s));
             GrandTotalUsd = report.GrandTotalUsd;
-            OnPropertyChanged(nameof(GrandTotalText));
         }
-        catch (Exception ex)
+        catch (IOException ex)
+        {
+            Error = ex.Message;
+        }
+        catch (JsonException ex)
         {
             Error = ex.Message;
         }

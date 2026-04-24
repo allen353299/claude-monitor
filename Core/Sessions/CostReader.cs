@@ -119,14 +119,6 @@ public sealed class CostReader : ICostReader
 
     private string DecodeProjectPath(string jsonlFilePath)
     {
-        try
-        {
-            var decoded = _decoder.Decode(JsonlPath.From(jsonlFilePath));
-            return decoded.Value;
-        }
-        catch
-        {
-            return Path.GetFileName(Path.GetDirectoryName(jsonlFilePath) ?? "");
-        }
+        return _decoder.Decode(JsonlPath.From(jsonlFilePath)).Value;
     }
 }

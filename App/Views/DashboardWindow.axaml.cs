@@ -23,10 +23,6 @@ public partial class DashboardWindow : Window
     {
         if (sender is not Control c || c.Tag is not string url) return;
         if (string.IsNullOrWhiteSpace(url)) return;
-        try
-        {
-            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-        }
-        catch { }
+        Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
     }
 }

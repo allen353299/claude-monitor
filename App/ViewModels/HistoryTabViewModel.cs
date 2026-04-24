@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using ClaudeMonitor.Core.Sessions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -37,7 +38,7 @@ public sealed partial class HistoryTabViewModel : ObservableObject
             foreach (var e in entries) AllItems.Add(new HistoryItemVm(e));
             ApplyFilter();
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
             Error = ex.Message;
         }

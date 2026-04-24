@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -16,6 +17,7 @@ public partial class App : Application
     private PopoverWindow? _popover;
     private DashboardWindow? _dashboard;
     private PopoverViewModel? _popoverVm;
+    private readonly Dictionary<JsonlPath, ConversationWindow> _conversationWindows = new();
 
     public static bool IsQuitting { get; private set; }
 
@@ -70,10 +72,18 @@ public partial class App : Application
 
     private void OnConversationRequested(object? sender, ConversationRequestedEventArgs e)
     {
+        if (_conversationWindows.TryGetValue(e.Path, out var existing))
+        {
+            existing.Show();
+            existing.Activate();
+            return;
+        }
         var window = new ConversationWindow
         {
             DataContext = new ConversationViewModel(e.Path, e.Title),
         };
+        window.Closed += (_, _) => _conversationWindows.Remove(e.Path);
+        _conversationWindows[e.Path] = window;
         window.Show();
     }
 

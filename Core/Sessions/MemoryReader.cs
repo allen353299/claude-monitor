@@ -56,24 +56,12 @@ public sealed class MemoryReader : IMemoryReader
             });
 
             var dirName = Path.GetFileName(projectDir);
-            var decoded = DecodeSafely(dirName);
+            var fakePath = JsonlPath.From(Path.Combine(_projectsRoot, dirName, "x.jsonl"));
+            var decoded = _decoder.Decode(fakePath).Value;
             projects.Add(new MemoryProject(dirName, decoded, files));
         }
 
         projects.Sort((a, b) => string.Compare(a.DecodedPath, b.DecodedPath, StringComparison.OrdinalIgnoreCase));
         return projects;
-    }
-
-    private string DecodeSafely(string dirName)
-    {
-        try
-        {
-            var fakeJsonlPath = JsonlPath.From(Path.Combine(_projectsRoot, dirName, "x.jsonl"));
-            return _decoder.Decode(fakeJsonlPath).Value;
-        }
-        catch
-        {
-            return dirName;
-        }
     }
 }

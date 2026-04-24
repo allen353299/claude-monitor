@@ -12,6 +12,8 @@ public sealed partial class SettingsTabViewModel : ObservableObject
 {
     private const string ReleasesApiUrl = "https://api.github.com/repos/allen353299/claude-monitor/releases/latest";
 
+    private static readonly HttpClient SharedHttp = CreateHttpClient();
+
     [ObservableProperty] private string _currentVersion;
     [ObservableProperty] private string? _latestVersion;
     [ObservableProperty] private string? _latestReleaseUrl;
@@ -34,26 +36,45 @@ public sealed partial class SettingsTabViewModel : ObservableObject
         HasUpdate = false;
         try
         {
-            using var http = new HttpClient();
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("ClaudeMonitor");
-            http.Timeout = TimeSpan.FromSeconds(10);
-            var json = await http.GetStringAsync(ReleasesApiUrl);
+            var json = await SharedHttp.GetStringAsync(ReleasesApiUrl);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var tag = root.GetProperty("tag_name").GetString() ?? "";
             var url = root.GetProperty("html_url").GetString();
-            LatestVersion = tag.TrimStart('v');
+            LatestVersion = tag.TrimStart('v', 'V');
             LatestReleaseUrl = url;
-            HasUpdate = !string.Equals(LatestVersion, CurrentVersion, StringComparison.OrdinalIgnoreCase);
+            HasUpdate = IsNewerVersion(LatestVersion, CurrentVersion);
             UpdateStatus = HasUpdate ? "Update available" : "Up to date";
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            UpdateStatus = $"Check failed: {ex.Message}";
+            UpdateStatus = $"Network error: {ex.Message}";
+        }
+        catch (TaskCanceledException)
+        {
+            UpdateStatus = "Check timed out";
+        }
+        catch (JsonException)
+        {
+            UpdateStatus = "Invalid response";
         }
         finally
         {
             IsChecking = false;
         }
+    }
+
+    private static bool IsNewerVersion(string latest, string current)
+    {
+        if (!Version.TryParse(latest, out var l)) return false;
+        if (!Version.TryParse(current, out var c)) return true;
+        return l > c;
+    }
+
+    private static HttpClient CreateHttpClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("ClaudeMonitor");
+        return client;
     }
 }
