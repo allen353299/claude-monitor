@@ -6,10 +6,13 @@ namespace ClaudeMonitor.Core.Sessions;
 
 public sealed class SessionScanner : ISessionScanner
 {
-    private readonly string _claudeHome;
     private readonly string _projectsRoot;
     private readonly TimeSpan _fallbackInterval;
     private readonly TimeSpan _debounce;
+    private readonly ILiveSessionIndex _liveSessions;
+    private readonly IStatusAnalyzer _statusAnalyzer;
+    private readonly ISessionEnricher _enricher;
+    private readonly IProjectPathDecoder _projectPathDecoder;
 
     private readonly ConcurrentDictionary<JsonlPath, Session> _sessionsByPath = new();
     private readonly ConcurrentDictionary<JsonlPath, CancellationTokenSource> _debouncersByPath = new();
@@ -20,13 +23,21 @@ public sealed class SessionScanner : ISessionScanner
     private int _started;
 
     public SessionScanner(
+        ILiveSessionIndex liveSessions,
+        IStatusAnalyzer statusAnalyzer,
+        ISessionEnricher enricher,
+        IProjectPathDecoder projectPathDecoder,
         string? claudeHome = null,
         TimeSpan? fallbackInterval = null,
         TimeSpan? debounce = null)
     {
-        _claudeHome = claudeHome
+        _liveSessions = liveSessions;
+        _statusAnalyzer = statusAnalyzer;
+        _enricher = enricher;
+        _projectPathDecoder = projectPathDecoder;
+        var home = claudeHome
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
-        _projectsRoot = Path.Combine(_claudeHome, "projects");
+        _projectsRoot = Path.Combine(home, "projects");
         _fallbackInterval = fallbackInterval ?? TimeSpan.FromSeconds(5);
         _debounce = debounce ?? TimeSpan.FromMilliseconds(200);
     }
@@ -73,26 +84,20 @@ public sealed class SessionScanner : ISessionScanner
             _watcher.EnableRaisingEvents = true;
         }
 
-        _fallbackLoop = Task.Run(() => FallbackLoopAsync(_lifetimeCts.Token));
+        _fallbackLoop = FallbackLoopAsync(_lifetimeCts.Token);
     }
 
     private async Task InitialScanAsync(CancellationToken ct)
     {
-        var livePidSessionIds = GetLivePidSessionIds();
+        var liveSessionIds = _liveSessions.Snapshot().Keys.ToHashSet();
 
         foreach (var file in EnumerateJsonlFiles())
         {
             ct.ThrowIfCancellationRequested();
             var sessionId = SessionId.From(Path.GetFileNameWithoutExtension(file.Value));
-            if (!livePidSessionIds.Contains(sessionId)) continue;
+            if (!liveSessionIds.Contains(sessionId)) continue;
             await RefreshAsync(file, ct).ConfigureAwait(false);
         }
-    }
-
-    private HashSet<SessionId> GetLivePidSessionIds()
-    {
-        var snapshot = LiveSessionIndex.Snapshot(_claudeHome);
-        return new HashSet<SessionId>(snapshot.Keys);
     }
 
     private IEnumerable<JsonlPath> EnumerateJsonlFiles()
@@ -146,28 +151,30 @@ public sealed class SessionScanner : ISessionScanner
         }
         _debouncersByPath[path] = newCts;
 
-        _ = Task.Run(async () =>
+        _ = DebounceAndRefreshAsync(path, newCts);
+    }
+
+    private async Task DebounceAndRefreshAsync(JsonlPath path, CancellationTokenSource cts)
+    {
+        try
         {
-            try
+            await Task.Delay(_debounce, cts.Token).ConfigureAwait(false);
+            await RefreshAsync(path, cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            if (_debouncersByPath.TryGetValue(path, out var current) && current == cts)
             {
-                await Task.Delay(_debounce, newCts.Token).ConfigureAwait(false);
-                await RefreshAsync(path, newCts.Token).ConfigureAwait(false);
+                _debouncersByPath.TryRemove(path, out _);
             }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception)
-            {
-            }
-            finally
-            {
-                if (_debouncersByPath.TryGetValue(path, out var current) && current == newCts)
-                {
-                    _debouncersByPath.TryRemove(path, out _);
-                }
-                newCts.Dispose();
-            }
-        });
+            cts.Dispose();
+        }
     }
 
     private async Task FallbackLoopAsync(CancellationToken ct)
@@ -188,7 +195,7 @@ public sealed class SessionScanner : ISessionScanner
     private async Task FullScanAsync(CancellationToken ct)
     {
         var seenPaths = new HashSet<JsonlPath>();
-        var livePidSessionIds = GetLivePidSessionIds();
+        var liveSessionIds = _liveSessions.Snapshot().Keys.ToHashSet();
 
         foreach (var file in EnumerateJsonlFiles())
         {
@@ -196,7 +203,7 @@ public sealed class SessionScanner : ISessionScanner
             seenPaths.Add(file);
 
             var sessionId = SessionId.From(Path.GetFileNameWithoutExtension(file.Value));
-            if (!livePidSessionIds.Contains(sessionId))
+            if (!liveSessionIds.Contains(sessionId))
             {
                 if (_sessionsByPath.TryRemove(file, out var removed))
                 {
@@ -231,14 +238,11 @@ public sealed class SessionScanner : ISessionScanner
             return;
         }
 
-        var mtime = SafeLastWrite(path.Value);
-        if (mtime == null) return;
+        if (!path.TryGetLastWrite(out var lastActivity)) return;
 
-        var sessionIdFromPath = SessionId.From(Path.GetFileNameWithoutExtension(path.Value));
-        var liveIds = GetLivePidSessionIds();
-        var isLive = liveIds.Contains(sessionIdFromPath);
-
-        if (!isLive)
+        var id = SessionId.From(Path.GetFileNameWithoutExtension(path.Value));
+        var liveSessionIds = _liveSessions.Snapshot().Keys.ToHashSet();
+        if (!liveSessionIds.Contains(id))
         {
             if (_sessionsByPath.TryRemove(path, out var removed))
             {
@@ -265,29 +269,21 @@ public sealed class SessionScanner : ISessionScanner
             return;
         }
 
-        var status = StatusAnalyzer.DetermineStatus(entries, mtime);
-        var pendingTool = StatusAnalyzer.GetPendingToolName(entries);
-        var enriched = SessionEnricher.Enrich(entries);
-        var customTitle = ExtractCustomTitle(entries);
-
-        var id = SessionId.From(Path.GetFileNameWithoutExtension(path.Value));
-        var projectName = ExtractProjectName(path);
-        var projectPath = DecodeProjectPath(path);
-
+        var enriched = _enricher.Enrich(entries);
         var session = new Session(
             Id: id,
-            SessionName: projectName,
-            CustomTitle: customTitle,
-            ProjectPath: projectPath,
+            SessionName: _projectPathDecoder.ExtractProjectName(path),
+            CustomTitle: enriched.CustomTitle,
+            ProjectPath: _projectPathDecoder.Decode(path),
             JsonlPath: path,
-            Status: status,
-            PendingTool: pendingTool,
+            Status: _statusAnalyzer.DetermineStatus(entries, lastActivity),
+            PendingTool: _statusAnalyzer.GetPendingToolName(entries),
             FirstPrompt: enriched.FirstPrompt,
             LatestMessage: enriched.LatestMessage,
             Recap: enriched.Recap,
             MessageCount: enriched.MessageCount,
-            IsLive: isLive,
-            LastActivity: mtime.Value);
+            IsLive: true,
+            LastActivity: lastActivity);
 
         Session? previous = null;
         _sessionsByPath.AddOrUpdate(
@@ -295,74 +291,10 @@ public sealed class SessionScanner : ISessionScanner
             _ => session,
             (_, existing) => { previous = existing; return session; });
 
-        if (previous is null || !SessionsEqual(previous, session))
+        if (previous != session)
         {
             SessionUpdated?.Invoke(this, new SessionUpdatedEventArgs(session));
         }
-    }
-
-    private static bool SessionsEqual(Session a, Session b)
-    {
-        return a.Id == b.Id
-            && a.SessionName == b.SessionName
-            && a.CustomTitle == b.CustomTitle
-            && a.JsonlPath == b.JsonlPath
-            && a.Status == b.Status
-            && a.PendingTool == b.PendingTool
-            && a.FirstPrompt == b.FirstPrompt
-            && a.LatestMessage == b.LatestMessage
-            && a.Recap == b.Recap
-            && a.MessageCount == b.MessageCount
-            && a.IsLive == b.IsLive
-            && a.LastActivity == b.LastActivity;
-    }
-
-    private static string ExtractProjectName(JsonlPath jsonlPath)
-    {
-        var parentDir = Path.GetDirectoryName(jsonlPath.Value);
-        if (string.IsNullOrEmpty(parentDir)) return "unknown";
-
-        var dirName = new DirectoryInfo(parentDir).Name;
-        var trimmed = dirName.TrimStart('-');
-
-        if (string.IsNullOrEmpty(trimmed)) return dirName;
-
-        var segments = trimmed.Split('-', StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length == 0) return dirName;
-
-        return segments[^1];
-    }
-
-    private static ProjectPath DecodeProjectPath(JsonlPath jsonlPath)
-    {
-        var parentDir = Path.GetDirectoryName(jsonlPath.Value);
-        if (string.IsNullOrEmpty(parentDir)) return ProjectPath.From("unknown");
-
-        var dirName = new DirectoryInfo(parentDir).Name;
-        var decoded = dirName.Replace('-', Path.DirectorySeparatorChar);
-        return ProjectPath.From(string.IsNullOrWhiteSpace(decoded) ? "unknown" : decoded);
-    }
-
-    private static string? ExtractCustomTitle(IReadOnlyList<SessionEntry> entries)
-    {
-        for (int i = entries.Count - 1; i >= 0; i--)
-        {
-            if (entries[i] is CustomTitleEntry ct && !string.IsNullOrWhiteSpace(ct.CustomTitle))
-            {
-                return ct.CustomTitle;
-            }
-        }
-        return null;
-    }
-
-    private static DateTimeOffset? SafeLastWrite(string path)
-    {
-        try
-        {
-            return new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
-        }
-        catch (IOException) { return null; }
-        catch (UnauthorizedAccessException) { return null; }
     }
 
     public async ValueTask DisposeAsync()

@@ -3,19 +3,24 @@ using System.Text.Json;
 
 namespace ClaudeMonitor.Core.Platform;
 
-public static class LiveSessionIndex
+public sealed class LiveSessionIndex : ILiveSessionIndex
 {
-    public static Dictionary<SessionId, int> Snapshot(string? claudeHome = null)
+    private readonly string _sessionsDir;
+
+    public LiveSessionIndex(string? claudeHome = null)
+    {
+        var home = claudeHome
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
+        _sessionsDir = Path.Combine(home, "sessions");
+    }
+
+    public IReadOnlyDictionary<SessionId, int> Snapshot()
     {
         var result = new Dictionary<SessionId, int>();
-
-        claudeHome ??= Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
-        var sessionsDir = Path.Combine(claudeHome, "sessions");
-        if (!Directory.Exists(sessionsDir)) return result;
+        if (!Directory.Exists(_sessionsDir)) return result;
 
         IEnumerable<string> files;
-        try { files = Directory.EnumerateFiles(sessionsDir, "*.json"); }
+        try { files = Directory.EnumerateFiles(_sessionsDir, "*.json"); }
         catch (IOException) { return result; }
         catch (UnauthorizedAccessException) { return result; }
 
@@ -30,6 +35,16 @@ public static class LiveSessionIndex
         }
 
         return result;
+    }
+
+    public bool TryGetPid(SessionId sessionId, out int pid)
+    {
+        if (string.IsNullOrEmpty(sessionId.Value))
+        {
+            pid = 0;
+            return false;
+        }
+        return Snapshot().TryGetValue(sessionId, out pid);
     }
 
     private static string? ReadSessionId(string pidFilePath)

@@ -5,14 +5,14 @@ namespace ClaudeMonitor.Core;
 public sealed record Session(
     SessionId Id,
     string SessionName,
-    string? CustomTitle,
+    DisplayText? CustomTitle,
     ProjectPath ProjectPath,
     JsonlPath JsonlPath,
     SessionStatus Status,
     string? PendingTool,
-    string? FirstPrompt,
-    string? LatestMessage,
-    string? Recap,
+    DisplayText? FirstPrompt,
+    DisplayText? LatestMessage,
+    DisplayText? Recap,
     int MessageCount,
     bool IsLive,
     DateTimeOffset LastActivity);

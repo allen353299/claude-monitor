@@ -1,99 +1,103 @@
-using System.Text.RegularExpressions;
 using ClaudeMonitor.Core.Models;
 
 namespace ClaudeMonitor.Core.Sessions;
 
-public static class SessionEnricher
+public sealed class SessionEnricher : ISessionEnricher
 {
     public sealed record EnrichedData(
-        string? FirstPrompt,
-        string? LatestMessage,
-        string? Recap,
+        DisplayText? FirstPrompt,
+        DisplayText? LatestMessage,
+        DisplayText? Recap,
+        DisplayText? CustomTitle,
         int MessageCount);
 
-    private const int FirstPromptMaxLen = 100;
-    private const int LatestMessageMaxLen = 200;
+    private const int FirstPromptMaxLength = 100;
+    private const int LatestMessageMaxLength = 200;
+    private const int RecapMaxLength = 200;
+    private const int CustomTitleMaxLength = 80;
 
-    private static readonly Regex CommandTag = new(
-        "<command-(?:name|message|args)>.*?</command-(?:name|message|args)>",
-        RegexOptions.Singleline | RegexOptions.Compiled);
-
-    public static EnrichedData Enrich(IReadOnlyList<SessionEntry> entries)
+    public EnrichedData Enrich(IReadOnlyList<SessionEntry> entries)
     {
         return new EnrichedData(
             FirstPrompt: ExtractFirstPrompt(entries),
             LatestMessage: ExtractLatestMessage(entries),
             Recap: ExtractRecap(entries),
+            CustomTitle: ExtractCustomTitle(entries),
             MessageCount: CountMessages(entries));
     }
 
-    private static string? ExtractRecap(IReadOnlyList<SessionEntry> entries)
+    private static DisplayText? ExtractRecap(IReadOnlyList<SessionEntry> entries)
     {
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             if (entries[i] is SystemEntry se
                 && se.Subtype == "away_summary"
-                && !string.IsNullOrWhiteSpace(se.Content))
+                && DisplayText.TryFrom(se.Content, RecapMaxLength, out var text))
             {
-                return Truncate(se.Content, LatestMessageMaxLen);
+                return text;
             }
         }
         return null;
     }
 
-    private static string? ExtractFirstPrompt(IReadOnlyList<SessionEntry> entries)
+    private static DisplayText? ExtractFirstPrompt(IReadOnlyList<SessionEntry> entries)
     {
         foreach (var entry in entries)
         {
-            if (entry is UserEntry u && !u.Message.IsToolResult)
+            if (entry is UserEntry u
+                && !u.Message.IsToolResult
+                && DisplayText.TryFrom(u.Message.Content, FirstPromptMaxLength, out var text))
             {
-                var cleaned = CleanCommandTags(u.Message.Content).Trim();
-                if (cleaned.Length > 0)
-                {
-                    return Truncate(cleaned, FirstPromptMaxLen);
-                }
+                return text;
             }
         }
         return null;
     }
 
-    private static string? ExtractLatestMessage(IReadOnlyList<SessionEntry> entries)
+    private static DisplayText? ExtractLatestMessage(IReadOnlyList<SessionEntry> entries)
     {
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             switch (entries[i])
             {
                 case AssistantEntry a:
-                    {
-                        var text = FindLast<TextContent>(a.Message.Content)?.Text;
-                        if (!string.IsNullOrWhiteSpace(text))
-                        {
-                            return Truncate(text.Trim(), LatestMessageMaxLen);
-                        }
-
-                        var toolName = FindLast<ToolUseContent>(a.Message.Content)?.Name;
-                        if (!string.IsNullOrEmpty(toolName))
-                        {
-                            return Truncate($"Executing {toolName}...", LatestMessageMaxLen);
-                        }
-
-                        var thinking = FindLast<ThinkingContent>(a.Message.Content)?.Thinking;
-                        if (!string.IsNullOrWhiteSpace(thinking))
-                        {
-                            return Truncate(thinking.Trim(), LatestMessageMaxLen);
-                        }
-                        break;
-                    }
+                    if (TryLatestFromAssistant(a.Message.Content, out var assistantText))
+                        return assistantText;
+                    break;
 
                 case UserEntry u when !u.Message.IsToolResult:
-                    {
-                        var cleaned = CleanCommandTags(u.Message.Content).Trim();
-                        if (cleaned.Length > 0)
-                        {
-                            return Truncate(cleaned, LatestMessageMaxLen);
-                        }
-                        break;
-                    }
+                    if (DisplayText.TryFrom(u.Message.Content, LatestMessageMaxLength, out var userText))
+                        return userText;
+                    break;
+            }
+        }
+        return null;
+    }
+
+    private static bool TryLatestFromAssistant(IReadOnlyList<MessageContent> content, out DisplayText result)
+    {
+        var textBlock = FindLast<TextContent>(content)?.Text;
+        if (DisplayText.TryFrom(textBlock, LatestMessageMaxLength, out result)) return true;
+
+        var toolName = FindLast<ToolUseContent>(content)?.Name;
+        if (!string.IsNullOrEmpty(toolName)
+            && DisplayText.TryFrom($"Executing {toolName}...", LatestMessageMaxLength, out result))
+        {
+            return true;
+        }
+
+        var thinking = FindLast<ThinkingContent>(content)?.Thinking;
+        return DisplayText.TryFrom(thinking, LatestMessageMaxLength, out result);
+    }
+
+    private static DisplayText? ExtractCustomTitle(IReadOnlyList<SessionEntry> entries)
+    {
+        for (int i = entries.Count - 1; i >= 0; i--)
+        {
+            if (entries[i] is CustomTitleEntry ct
+                && DisplayText.TryFrom(ct.CustomTitle, CustomTitleMaxLength, out var text))
+            {
+                return text;
             }
         }
         return null;
@@ -116,38 +120,5 @@ public static class SessionEnricher
             if (content[i] is T match) return match;
         }
         return null;
-    }
-
-    private static string CleanCommandTags(string input)
-    {
-        return string.IsNullOrEmpty(input) ? input : CommandTag.Replace(input, "");
-    }
-
-    private static string Truncate(string s, int max)
-    {
-        var flat = CollapseWhitespace(s);
-        if (flat.Length <= max) return flat;
-        return flat.AsSpan(0, max).ToString() + "…";
-    }
-
-    private static string CollapseWhitespace(string s)
-    {
-        if (string.IsNullOrEmpty(s)) return s;
-        var sb = new System.Text.StringBuilder(s.Length);
-        bool prevSpace = false;
-        foreach (var ch in s)
-        {
-            if (ch is '\n' or '\r' or '\t' or ' ')
-            {
-                if (!prevSpace) sb.Append(' ');
-                prevSpace = true;
-            }
-            else
-            {
-                sb.Append(ch);
-                prevSpace = false;
-            }
-        }
-        return sb.ToString().Trim();
     }
 }

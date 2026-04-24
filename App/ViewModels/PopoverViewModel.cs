@@ -1,14 +1,9 @@
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Media;
 using Avalonia.Threading;
-using ClaudeMonitor.App.Theme;
 using ClaudeMonitor.Core;
-using ClaudeMonitor.Core.Models;
 using ClaudeMonitor.Core.Platform;
 using ClaudeMonitor.Core.Sessions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,7 +13,6 @@ namespace ClaudeMonitor.App.ViewModels;
 
 public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 {
-    private const int PixelColumns = 28;
     private static readonly TimeSpan TimeBasedPropertyRefreshInterval = TimeSpan.FromMinutes(1);
 
     private readonly ISessionScanner _scanner;
@@ -27,7 +21,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
     public SessionVmCollection Sessions { get; } = new();
 
-    public ObservableCollection<PixelBlock> PixelBlocks { get; } = new();
+    public PixelBar Bar { get; } = new();
 
     public string SessionCountText => $"{Sessions.Count} SESSION{(Sessions.Count == 1 ? "" : "S")}";
 
@@ -45,11 +39,6 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         _scanner.SessionRemoved += OnSessionRemoved;
         Sessions.CollectionChanged += OnSessionsChanged;
 
-        for (int i = 0; i < PixelColumns; i++)
-        {
-            PixelBlocks.Add(new PixelBlock { Color = StatusPalette.PixelEmpty });
-        }
-
         foreach (var s in _scanner.CurrentSessions)
         {
             var vm = new SessionVm { Id = s.Id };
@@ -57,8 +46,8 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
             Sessions.Add(vm);
         }
 
-        SortSessions();
-        RefreshPixelBlocks();
+        Sessions.Sort(SessionVmRankComparer.Default);
+        Bar.Refresh(Sessions);
 
         _ageTimer = new DispatcherTimer(TimeBasedPropertyRefreshInterval, DispatcherPriority.Background, (_, _) =>
         {
@@ -80,7 +69,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         if (vm is not null)
         {
             vm.Acknowledge();
-            SortSessions();
+            Sessions.Sort(SessionVmRankComparer.Default);
         }
         try
         {
@@ -95,7 +84,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
     {
         OnPropertyChanged(nameof(SessionCountText));
         OnPropertyChanged(nameof(IsEmpty));
-        RefreshPixelBlocks();
+        Bar.Refresh(Sessions);
     }
 
     private void OnSessionUpdated(object? sender, SessionUpdatedEventArgs e)
@@ -114,119 +103,14 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
                 vm.UpdateFrom(session);
                 Sessions.Add(vm);
             }
-            SortSessions();
-            RefreshPixelBlocks();
+            Sessions.Sort(SessionVmRankComparer.Default);
+            Bar.Refresh(Sessions);
         });
     }
 
     private void OnSessionRemoved(object? sender, SessionRemovedEventArgs e)
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            Sessions.RemoveById(e.SessionId);
-        });
-    }
-
-    private static int SessionRank(SessionVm v)
-    {
-        if (v.Status == SessionStatus.NeedsAttention) return 0;
-        if (v.Status == SessionStatus.WaitingForInput && v.IsDoneRecent) return 1;
-        if (v.Status == SessionStatus.Working) return 2;
-        if (v.Status == SessionStatus.WaitingForInput) return 3;
-        return 4;
-    }
-
-    private void SortSessions()
-    {
-        var sorted = Sessions
-            .OrderBy(SessionRank)
-            .ThenByDescending(v => v.LastActivity)
-            .ToList();
-
-        for (int target = 0; target < sorted.Count; target++)
-        {
-            var desired = sorted[target];
-            var current = Sessions[target];
-            if (!ReferenceEquals(current, desired))
-            {
-                var currentIdx = Sessions.IndexOf(desired);
-                Sessions.Move(currentIdx, target);
-            }
-        }
-    }
-
-    private void RefreshPixelBlocks()
-    {
-        int sessionCount = Sessions.Count;
-        int working = 0, attention = 0, done = 0, idle = 0;
-        foreach (var s in Sessions)
-        {
-            switch (s.Status)
-            {
-                case SessionStatus.Working: working++; break;
-                case SessionStatus.NeedsAttention: attention++; break;
-                case SessionStatus.WaitingForInput:
-                    if (s.IsDoneRecent) done++; else idle++;
-                    break;
-            }
-        }
-
-        var columnLayout = DistributeBlocks(attention, done, working, idle, sessionCount, PixelColumns);
-
-        for (int i = 0; i < PixelColumns; i++)
-        {
-            PixelBlocks[i].Color = columnLayout[i] switch
-            {
-                'w' => StatusPalette.Working,
-                'a' => StatusPalette.Attention,
-                'd' => StatusPalette.Done,
-                'i' => StatusPalette.Idle,
-                _ => StatusPalette.PixelEmpty,
-            };
-        }
-    }
-
-    private static char[] DistributeBlocks(int attention, int done, int working, int idle, int sessionCount, int columns)
-    {
-        var result = new char[columns];
-        Array.Fill(result, ' ');
-        if (sessionCount == 0) return result;
-
-        var counts = new[] { attention, done, working, idle };
-        var keys = new[] { 'a', 'd', 'w', 'i' };
-
-        double[] percentages = counts.Select(c => (double)c / sessionCount * columns).ToArray();
-        int[] allocated = percentages.Select(p => (int)Math.Floor(p)).ToArray();
-        double[] remainders = percentages.Select((p, i) => p - allocated[i]).ToArray();
-
-        int sum = allocated.Sum();
-        while (sum < columns)
-        {
-            int maxIdx = 0;
-            double maxVal = remainders[0];
-            for (int i = 1; i < remainders.Length; i++)
-            {
-                if (remainders[i] > maxVal)
-                {
-                    maxVal = remainders[i];
-                    maxIdx = i;
-                }
-            }
-            if (maxVal < 0) break;
-            allocated[maxIdx]++;
-            remainders[maxIdx] = -1;
-            sum++;
-        }
-
-        int cursor = 0;
-        for (int k = 0; k < keys.Length; k++)
-        {
-            for (int j = 0; j < allocated[k] && cursor < columns; j++)
-            {
-                result[cursor++] = keys[k];
-            }
-        }
-        return result;
+        Dispatcher.UIThread.Post(() => Sessions.RemoveById(e.SessionId));
     }
 
     public async ValueTask DisposeAsync()

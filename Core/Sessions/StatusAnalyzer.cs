@@ -3,13 +3,13 @@ using ClaudeMonitor.Core.Models;
 
 namespace ClaudeMonitor.Core.Sessions;
 
-public static class StatusAnalyzer
+public sealed class StatusAnalyzer : IStatusAnalyzer
 {
     private const int PermissionStaleSeconds = 15;
     private const int UserRecencySeconds = 30;
     private const int AssistantRecencySeconds = 20;
 
-    public static SessionStatus DetermineStatus(
+    public SessionStatus DetermineStatus(
         IReadOnlyList<SessionEntry> entries,
         DateTimeOffset? fileMtime = null,
         DateTimeOffset? now = null)
@@ -83,7 +83,7 @@ public static class StatusAnalyzer
         };
     }
 
-    public static string? GetPendingToolName(IReadOnlyList<SessionEntry> entries)
+    public string? GetPendingToolName(IReadOnlyList<SessionEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
 

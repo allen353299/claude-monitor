@@ -63,11 +63,13 @@ public class StatusAnalyzerTests
 
     private static TextContent Text(string t) => new() { Text = t };
 
+    private static readonly StatusAnalyzer Analyzer = new();
+
     private static SessionStatus Status(IReadOnlyList<SessionEntry> entries, DateTimeOffset? mtime = null)
-        => StatusAnalyzer.DetermineStatus(entries, mtime, FrozenNow);
+        => Analyzer.DetermineStatus(entries, mtime, FrozenNow);
 
     private static string? PendingTool(IReadOnlyList<SessionEntry> entries)
-        => StatusAnalyzer.GetPendingToolName(entries);
+        => Analyzer.GetPendingToolName(entries);
 
     // ---------- DetermineStatus tests ----------
 

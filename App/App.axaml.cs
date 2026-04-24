@@ -1,12 +1,8 @@
-using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using ClaudeMonitor.App.ViewModels;
+using ClaudeMonitor.App.Composition;
 using ClaudeMonitor.App.Views;
-using ClaudeMonitor.Core.Platform;
-using ClaudeMonitor.Core.Sessions;
-using ClaudeMonitor.Platform.Windows;
 
 namespace ClaudeMonitor.App;
 
@@ -21,13 +17,8 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var scanner = new SessionScanner();
-            ISessionActivator activator = OperatingSystem.IsWindows()
-                ? new WindowsSessionActivator()
-                : new NoopSessionActivator();
-            var vm = new PopoverViewModel(scanner, activator);
-            var popover = new PopoverWindow { DataContext = vm };
-            desktop.MainWindow = popover;
+            var vm = AppComposition.CreatePopoverViewModel();
+            desktop.MainWindow = new PopoverWindow { DataContext = vm };
             _ = vm.StartAsync();
         }
 

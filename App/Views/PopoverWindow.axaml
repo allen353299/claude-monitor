@@ -147,7 +147,7 @@
                     BorderThickness="0,1"
                     Padding="16,3"
                     Height="16">
-                <ItemsControl ItemsSource="{Binding PixelBlocks}">
+                <ItemsControl ItemsSource="{Binding Bar.Blocks}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <UniformGrid Rows="1" />

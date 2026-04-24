@@ -6,12 +6,19 @@ namespace ClaudeMonitor.Platform.Windows;
 
 public sealed class WindowsSessionActivator : ISessionActivator
 {
+    private readonly ILiveSessionIndex _liveSessions;
+
+    public WindowsSessionActivator(ILiveSessionIndex liveSessions)
+    {
+        _liveSessions = liveSessions;
+    }
+
     public Task<bool> ActivateAsync(SessionId sessionId, CancellationToken ct = default)
     {
-        var pid = SessionPidResolver.ResolvePid(sessionId);
-        if (pid is null) return Task.FromResult(false);
+        if (!_liveSessions.TryGetPid(sessionId, out var pid))
+            return Task.FromResult(false);
 
-        var hwnd = FindWindowForProcess(pid.Value);
+        var hwnd = FindWindowForProcess(pid);
         if (hwnd == IntPtr.Zero) return Task.FromResult(false);
 
         if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);

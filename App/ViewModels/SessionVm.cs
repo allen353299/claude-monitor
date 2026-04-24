@@ -88,10 +88,10 @@ public sealed partial class SessionVm : ObservableObject
     public void UpdateFrom(Session s)
     {
         SessionName = s.SessionName;
-        CustomTitle = s.CustomTitle;
-        FirstPrompt = s.FirstPrompt;
-        LatestMessage = s.LatestMessage;
-        Recap = s.Recap;
+        CustomTitle = s.CustomTitle?.Value;
+        FirstPrompt = s.FirstPrompt?.Value;
+        LatestMessage = s.LatestMessage?.Value;
+        Recap = s.Recap?.Value;
         Status = s.Status;
         PendingTool = s.PendingTool;
         MessageCount = s.MessageCount;
