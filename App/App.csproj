@@ -7,6 +7,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationIcon>Assets\ClaudeMonitor.ico</ApplicationIcon>
+    <AssemblyName>ClaudeMonitor.App</AssemblyName>
+    <RootNamespace>ClaudeMonitor.App</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ClaudeMonitor.Core\ClaudeMonitor.Core.csproj" />
-    <ProjectReference Include="..\ClaudeMonitor.Platform.Windows\ClaudeMonitor.Platform.Windows.csproj" />
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Windows\Windows.csproj" />
   </ItemGroup>
 </Project>

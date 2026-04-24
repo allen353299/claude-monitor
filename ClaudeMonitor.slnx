@@ -1,11 +1,7 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/ClaudeMonitor.App/ClaudeMonitor.App.csproj" />
-    <Project Path="src/ClaudeMonitor.Core/ClaudeMonitor.Core.csproj" />
-    <Project Path="src/ClaudeMonitor.Platform.Mac/ClaudeMonitor.Platform.Mac.csproj" />
-    <Project Path="src/ClaudeMonitor.Platform.Windows/ClaudeMonitor.Platform.Windows.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/ClaudeMonitor.Core.Tests/ClaudeMonitor.Core.Tests.csproj" />
-  </Folder>
+  <Project Path="Core/Core.csproj" />
+  <Project Path="Windows/Windows.csproj" />
+  <Project Path="Mac/Mac.csproj" />
+  <Project Path="App/App.csproj" />
+  <Project Path="Core.UnitTests/Core.UnitTests.csproj" />
 </Solution>

@@ -30,7 +30,7 @@ Always-on-top floating window showing live session status, with one-click focus 
 git clone https://github.com/allen353299/claude-monitor.git
 cd claude-monitor
 dotnet build
-dotnet run --project src/ClaudeMonitor.App
+dotnet run --project App
 ```
 
 Or double-click `run.bat` on Windows.
@@ -38,13 +38,11 @@ Or double-click `run.bat` on Windows.
 ## Project layout
 
 ```
-src/
-  ClaudeMonitor.Core/                 cross-platform: JSONL parser, status analyzer, session scanner
-  ClaudeMonitor.Platform.Windows/     Win32 P/Invoke: find & focus terminal windows
-  ClaudeMonitor.Platform.Mac/         (stub, reserved for future)
-  ClaudeMonitor.App/                  Avalonia UI (XAML, ViewModels)
-tests/
-  ClaudeMonitor.Core.Tests/           xUnit unit tests for StatusAnalyzer (31 tests)
+Core/              cross-platform: JSONL parser, status analyzer, session scanner
+Windows/           Win32 P/Invoke: find & focus terminal windows
+Mac/               (stub, reserved for future)
+App/               Avalonia UI (XAML, ViewModels)
+Core.UnitTests/    xUnit unit tests for StatusAnalyzer (31 tests)
 ```
 
 ## Tech stack
