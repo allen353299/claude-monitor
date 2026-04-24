@@ -149,9 +149,10 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
 
     private void RaiseAttentionIfTransitioned(Session session)
     {
-        var previous = _lastNotifiedStatus.TryGetValue(session.Id, out var prev) ? prev : SessionStatus.Connecting;
+        var hadPrevious = _lastNotifiedStatus.TryGetValue(session.Id, out var previous);
         _lastNotifiedStatus[session.Id] = session.Status;
 
+        if (!hadPrevious) return;
         if (previous == session.Status) return;
 
         var title = session.SessionName;

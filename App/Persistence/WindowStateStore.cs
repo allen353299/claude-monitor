@@ -20,7 +20,9 @@ public static class PersistedWindowStateStore
         {
             if (!File.Exists(FilePath)) return false;
             var json = File.ReadAllText(FilePath);
-            state = JsonSerializer.Deserialize<PersistedWindowState>(json);
+            var parsed = JsonSerializer.Deserialize<PersistedWindowState>(json);
+            if (parsed.Width <= 0 || parsed.Height <= 0) return false;
+            state = parsed;
             return true;
         }
         catch (IOException) { return false; }

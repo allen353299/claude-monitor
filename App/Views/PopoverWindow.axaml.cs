@@ -14,9 +14,11 @@ namespace ClaudeMonitor.App.Views;
 public partial class PopoverWindow : Window
 {
     private static readonly TimeSpan TopmostReapplyInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan PersistDebounce = TimeSpan.FromMilliseconds(400);
     private const double CompactHeightThreshold = 180;
 
     private DispatcherTimer? _topmostTimer;
+    private DispatcherTimer? _persistDebounceTimer;
 
     private bool _stateRestored;
 
@@ -37,14 +39,32 @@ public partial class PopoverWindow : Window
         SizeChanged += (_, _) =>
         {
             SyncCompactMode();
-            PersistWindowState();
+            SchedulePersist();
         };
-        PositionChanged += (_, _) => PersistWindowState();
+        PositionChanged += (_, _) => SchedulePersist();
         Closing += OnWindowClosing;
+    }
+
+    private void SchedulePersist()
+    {
+        if (!_stateRestored) return;
+        if (_persistDebounceTimer is null)
+        {
+            _persistDebounceTimer = new DispatcherTimer(PersistDebounce, DispatcherPriority.Background, OnDebouncedPersist);
+        }
+        _persistDebounceTimer.Stop();
+        _persistDebounceTimer.Start();
+    }
+
+    private void OnDebouncedPersist(object? sender, EventArgs e)
+    {
+        _persistDebounceTimer?.Stop();
+        PersistWindowState();
     }
 
     private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
     {
+        _persistDebounceTimer?.Stop();
         PersistWindowState();
         if (!App.IsQuitting)
         {
