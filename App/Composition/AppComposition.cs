@@ -21,6 +21,11 @@ public static class AppComposition
         return new PopoverViewModel(scanner, activator, notifications);
     }
 
+    public static DashboardViewModel CreateDashboardViewModel(PopoverViewModel popover)
+    {
+        return new DashboardViewModel(popover, new HistoryReader());
+    }
+
     private static ISessionActivator CreateSessionActivator(ILiveSessionIndex liveSessions)
     {
         if (OperatingSystem.IsWindows()) return new WindowsSessionActivator(liveSessions);

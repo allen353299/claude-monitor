@@ -52,7 +52,7 @@ public partial class App : Application
         if (_popoverVm is null) return;
         if (_dashboard is null)
         {
-            _dashboard = new DashboardWindow { DataContext = new DashboardViewModel(_popoverVm) };
+            _dashboard = new DashboardWindow { DataContext = AppComposition.CreateDashboardViewModel(_popoverVm) };
             _dashboard.Closed += (_, _) => _dashboard = null;
         }
         _dashboard.Show();
