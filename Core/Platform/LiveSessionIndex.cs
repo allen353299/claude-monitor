@@ -5,9 +5,9 @@ namespace ClaudeMonitor.Core.Platform;
 
 public static class LiveSessionIndex
 {
-    public static Dictionary<string, int> Snapshot(string? claudeHome = null)
+    public static Dictionary<SessionId, int> Snapshot(string? claudeHome = null)
     {
-        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<SessionId, int>();
 
         claudeHome ??= Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
@@ -26,7 +26,7 @@ public static class LiveSessionIndex
             if (!IsClaudeProcessAlive(pid)) continue;
 
             var sessionId = ReadSessionId(file);
-            if (!string.IsNullOrEmpty(sessionId)) result[sessionId] = pid;
+            if (!string.IsNullOrEmpty(sessionId)) result[SessionId.From(sessionId)] = pid;
         }
 
         return result;

@@ -1,11 +1,12 @@
 using System.Runtime.InteropServices;
+using ClaudeMonitor.Core;
 using ClaudeMonitor.Core.Platform;
 
 namespace ClaudeMonitor.Platform.Windows;
 
 public sealed class WindowsSessionActivator : ISessionActivator
 {
-    public Task<bool> ActivateAsync(string sessionId, CancellationToken ct = default)
+    public Task<bool> ActivateAsync(SessionId sessionId, CancellationToken ct = default)
     {
         var pid = SessionPidResolver.ResolvePid(sessionId);
         if (pid is null) return Task.FromResult(false);

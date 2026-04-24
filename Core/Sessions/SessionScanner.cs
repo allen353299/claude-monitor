@@ -11,8 +11,8 @@ public sealed class SessionScanner : ISessionScanner
     private readonly TimeSpan _fallbackInterval;
     private readonly TimeSpan _debounce;
 
-    private readonly ConcurrentDictionary<string, Session> _sessionsByPath = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _debouncersByPath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<JsonlPath, Session> _sessionsByPath = new();
+    private readonly ConcurrentDictionary<JsonlPath, CancellationTokenSource> _debouncersByPath = new();
     private readonly CancellationTokenSource _lifetimeCts = new();
 
     private FileSystemWatcher? _watcher;
@@ -83,19 +83,19 @@ public sealed class SessionScanner : ISessionScanner
         foreach (var file in EnumerateJsonlFiles())
         {
             ct.ThrowIfCancellationRequested();
-            var sessionId = Path.GetFileNameWithoutExtension(file);
+            var sessionId = SessionId.From(Path.GetFileNameWithoutExtension(file.Value));
             if (!livePidSessionIds.Contains(sessionId)) continue;
             await RefreshAsync(file, ct).ConfigureAwait(false);
         }
     }
 
-    private HashSet<string> GetLivePidSessionIds()
+    private HashSet<SessionId> GetLivePidSessionIds()
     {
         var snapshot = LiveSessionIndex.Snapshot(_claudeHome);
-        return new HashSet<string>(snapshot.Keys, StringComparer.OrdinalIgnoreCase);
+        return new HashSet<SessionId>(snapshot.Keys);
     }
 
-    private IEnumerable<string> EnumerateJsonlFiles()
+    private IEnumerable<JsonlPath> EnumerateJsonlFiles()
     {
         if (!Directory.Exists(_projectsRoot)) yield break;
 
@@ -117,7 +117,7 @@ public sealed class SessionScanner : ISessionScanner
             catch (IOException) { continue; }
             catch (UnauthorizedAccessException) { continue; }
 
-            foreach (var f in files) yield return f;
+            foreach (var f in files) yield return JsonlPath.From(f);
         }
     }
 
@@ -131,11 +131,12 @@ public sealed class SessionScanner : ISessionScanner
         QueueDebouncedRefresh(e.FullPath);
     }
 
-    private void QueueDebouncedRefresh(string path)
+    private void QueueDebouncedRefresh(string rawPath)
     {
         if (_lifetimeCts.IsCancellationRequested) return;
-        if (!path.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)) return;
+        if (!rawPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)) return;
 
+        var path = JsonlPath.From(rawPath);
         var newCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
 
         if (_debouncersByPath.TryRemove(path, out var old))
@@ -186,7 +187,7 @@ public sealed class SessionScanner : ISessionScanner
 
     private async Task FullScanAsync(CancellationToken ct)
     {
-        var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenPaths = new HashSet<JsonlPath>();
         var livePidSessionIds = GetLivePidSessionIds();
 
         foreach (var file in EnumerateJsonlFiles())
@@ -194,7 +195,7 @@ public sealed class SessionScanner : ISessionScanner
             if (ct.IsCancellationRequested) return;
             seenPaths.Add(file);
 
-            var sessionId = Path.GetFileNameWithoutExtension(file);
+            var sessionId = SessionId.From(Path.GetFileNameWithoutExtension(file.Value));
             if (!livePidSessionIds.Contains(sessionId))
             {
                 if (_sessionsByPath.TryRemove(file, out var removed))
@@ -219,9 +220,9 @@ public sealed class SessionScanner : ISessionScanner
         }
     }
 
-    private async Task RefreshAsync(string path, CancellationToken ct)
+    private async Task RefreshAsync(JsonlPath path, CancellationToken ct)
     {
-        if (!File.Exists(path))
+        if (!File.Exists(path.Value))
         {
             if (_sessionsByPath.TryRemove(path, out var removed))
             {
@@ -230,10 +231,10 @@ public sealed class SessionScanner : ISessionScanner
             return;
         }
 
-        var mtime = SafeLastWrite(path);
+        var mtime = SafeLastWrite(path.Value);
         if (mtime == null) return;
 
-        var sessionIdFromPath = Path.GetFileNameWithoutExtension(path);
+        var sessionIdFromPath = SessionId.From(Path.GetFileNameWithoutExtension(path.Value));
         var liveIds = GetLivePidSessionIds();
         var isLive = liveIds.Contains(sessionIdFromPath);
 
@@ -269,7 +270,7 @@ public sealed class SessionScanner : ISessionScanner
         var enriched = SessionEnricher.Enrich(entries);
         var customTitle = ExtractCustomTitle(entries);
 
-        var id = Path.GetFileNameWithoutExtension(path);
+        var id = SessionId.From(Path.GetFileNameWithoutExtension(path.Value));
         var projectName = ExtractProjectName(path);
         var projectPath = DecodeProjectPath(path);
 
@@ -316,9 +317,9 @@ public sealed class SessionScanner : ISessionScanner
             && a.LastActivity == b.LastActivity;
     }
 
-    private static string ExtractProjectName(string jsonlPath)
+    private static string ExtractProjectName(JsonlPath jsonlPath)
     {
-        var parentDir = Path.GetDirectoryName(jsonlPath);
+        var parentDir = Path.GetDirectoryName(jsonlPath.Value);
         if (string.IsNullOrEmpty(parentDir)) return "unknown";
 
         var dirName = new DirectoryInfo(parentDir).Name;
@@ -332,13 +333,14 @@ public sealed class SessionScanner : ISessionScanner
         return segments[^1];
     }
 
-    private static string DecodeProjectPath(string jsonlPath)
+    private static ProjectPath DecodeProjectPath(JsonlPath jsonlPath)
     {
-        var parentDir = Path.GetDirectoryName(jsonlPath);
-        if (string.IsNullOrEmpty(parentDir)) return "";
+        var parentDir = Path.GetDirectoryName(jsonlPath.Value);
+        if (string.IsNullOrEmpty(parentDir)) return ProjectPath.From("unknown");
 
         var dirName = new DirectoryInfo(parentDir).Name;
-        return dirName.Replace('-', Path.DirectorySeparatorChar);
+        var decoded = dirName.Replace('-', Path.DirectorySeparatorChar);
+        return ProjectPath.From(string.IsNullOrWhiteSpace(decoded) ? "unknown" : decoded);
     }
 
     private static string? ExtractCustomTitle(IReadOnlyList<SessionEntry> entries)

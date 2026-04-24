@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ClaudeMonitor.App.Theme;
+using ClaudeMonitor.Core;
 using ClaudeMonitor.Core.Models;
 using ClaudeMonitor.Core.Platform;
 using ClaudeMonitor.Core.Sessions;
@@ -24,7 +25,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
     private readonly ISessionActivator _activator;
     private readonly DispatcherTimer _ageTimer;
 
-    public ObservableCollection<SessionVm> Sessions { get; } = new();
+    public SessionVmCollection Sessions { get; } = new();
 
     public ObservableCollection<PixelBlock> PixelBlocks { get; } = new();
 
@@ -71,12 +72,11 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
     public Task StartAsync(CancellationToken ct = default) => _scanner.StartAsync(ct);
 
-    private SessionVm? FindSession(string id) => Sessions.FirstOrDefault(v => v.Id == id);
-
     private async Task ActivateSessionAsync(string? sessionId)
     {
-        if (string.IsNullOrEmpty(sessionId)) return;
-        var vm = FindSession(sessionId);
+        if (string.IsNullOrWhiteSpace(sessionId)) return;
+        var id = SessionId.From(sessionId);
+        var vm = Sessions.FindById(id);
         if (vm is not null)
         {
             vm.Acknowledge();
@@ -84,7 +84,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         }
         try
         {
-            await _activator.ActivateAsync(sessionId).ConfigureAwait(false);
+            await _activator.ActivateAsync(id).ConfigureAwait(false);
         }
         catch
         {
@@ -103,7 +103,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         Dispatcher.UIThread.Post(() =>
         {
             var session = e.Session;
-            var existing = FindSession(session.Id);
+            var existing = Sessions.FindById(session.Id);
             if (existing is not null)
             {
                 existing.UpdateFrom(session);
@@ -123,9 +123,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            var existing = FindSession(e.SessionId);
-            if (existing is not null)
-                Sessions.Remove(existing);
+            Sessions.RemoveById(e.SessionId);
         });
     }
 

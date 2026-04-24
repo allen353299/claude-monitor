@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ClaudeMonitor.Core;
 using ClaudeMonitor.Core.Models;
 
 namespace ClaudeMonitor.Core.Sessions;
@@ -15,11 +16,11 @@ public static class SessionParser
     };
 
     public static async Task<IReadOnlyList<SessionEntry>> ParseTailAsync(
-        string filePath,
+        JsonlPath filePath,
         int maxLines = 20,
         CancellationToken ct = default)
     {
-        var lines = await ReadAllLinesSharedAsync(filePath, ct).ConfigureAwait(false);
+        var lines = await ReadAllLinesSharedAsync(filePath.Value, ct).ConfigureAwait(false);
 
         var start = Math.Max(0, lines.Count - maxLines);
         var results = new List<SessionEntry>(Math.Min(maxLines, lines.Count - start));

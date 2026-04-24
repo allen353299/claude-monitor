@@ -11,7 +11,7 @@ public sealed partial class SessionVm : ObservableObject
 {
     private static readonly TimeSpan DoneRecencyWindow = TimeSpan.FromHours(1);
 
-    [ObservableProperty] private string _id = "";
+    [ObservableProperty] private SessionId _id;
     [ObservableProperty] private string _sessionName = "";
     [ObservableProperty] private string? _customTitle;
     [ObservableProperty] private string? _firstPrompt;

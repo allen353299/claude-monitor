@@ -3,11 +3,11 @@ using ClaudeMonitor.Core.Models;
 namespace ClaudeMonitor.Core;
 
 public sealed record Session(
-    string Id,
+    SessionId Id,
     string SessionName,
     string? CustomTitle,
-    string ProjectPath,
-    string JsonlPath,
+    ProjectPath ProjectPath,
+    JsonlPath JsonlPath,
     SessionStatus Status,
     string? PendingTool,
     string? FirstPrompt,

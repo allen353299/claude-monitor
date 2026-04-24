@@ -191,7 +191,7 @@
                                         Opacity="{Binding CardOpacity}"
                                         IsEnabled="{Binding IsLive}"
                                         Command="{Binding $parent[ItemsControl].((vm:PopoverViewModel)DataContext).ActivateSessionCommand}"
-                                        CommandParameter="{Binding Id}">
+                                        CommandParameter="{Binding Id.Value}">
                                     <Grid>
                                         <Rectangle Fill="{x:Static theme:StatusPalette.Attention}"
                                                    Opacity="0"
