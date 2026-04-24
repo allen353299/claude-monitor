@@ -21,8 +21,24 @@ public sealed class ProjectPathDecoder : IProjectPathDecoder
         var dirName = GetParentDirName(jsonlPath);
         if (dirName is null) return ProjectPath.From(Unknown);
 
-        var decoded = dirName.Replace('-', Path.DirectorySeparatorChar);
+        var decoded = DecodeDirName(dirName);
         return ProjectPath.From(string.IsNullOrWhiteSpace(decoded) ? Unknown : decoded);
+    }
+
+    private static string DecodeDirName(string dirName)
+    {
+        if (OperatingSystem.IsWindows()
+            && dirName.Length >= 3
+            && char.IsLetter(dirName[0])
+            && dirName[1] == '-'
+            && dirName[2] == '-')
+        {
+            var drive = char.ToUpperInvariant(dirName[0]);
+            var rest = dirName.Substring(3).Replace('-', '\\');
+            return $"{drive}:\\{rest}";
+        }
+
+        return dirName.Replace('-', Path.DirectorySeparatorChar);
     }
 
     private static string? GetParentDirName(JsonlPath jsonlPath)
