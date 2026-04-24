@@ -21,7 +21,8 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
     private static readonly IBrush WorkingBrush = new SolidColorBrush(Color.Parse("#22c55e"));
     private static readonly IBrush PermissionBrush = new SolidColorBrush(Color.Parse("#ff6600"));
-    private static readonly IBrush InputBrush = new SolidColorBrush(Color.Parse("#666666"));
+    private static readonly IBrush DoneBrush = new SolidColorBrush(Color.Parse("#06b6d4"));
+    private static readonly IBrush IdleBrush = new SolidColorBrush(Color.Parse("#666666"));
     private static readonly IBrush EmptyBrush = new SolidColorBrush(Color.FromArgb(0x0f, 0xff, 0xff, 0xff));
 
     private readonly ISessionScanner _scanner;
@@ -162,18 +163,20 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
     private void RefreshPixelBlocks()
     {
         int total = Sessions.Count;
-        int working = 0, permission = 0, input = 0;
+        int working = 0, permission = 0, done = 0, idle = 0;
         foreach (var s in Sessions)
         {
             switch (s.Status)
             {
                 case SessionStatus.Working: working++; break;
                 case SessionStatus.NeedsAttention: permission++; break;
-                case SessionStatus.WaitingForInput: input++; break;
+                case SessionStatus.WaitingForInput:
+                    if (s.IsDoneRecent) done++; else idle++;
+                    break;
             }
         }
 
-        var layout = DistributeBlocks(working, permission, input, total, PixelColumns);
+        var layout = DistributeBlocks(permission, done, working, idle, total, PixelColumns);
 
         for (int i = 0; i < PixelColumns; i++)
         {
@@ -181,20 +184,21 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
             {
                 'w' => WorkingBrush,
                 'p' => PermissionBrush,
-                'i' => InputBrush,
+                'd' => DoneBrush,
+                'i' => IdleBrush,
                 _ => EmptyBrush,
             };
         }
     }
 
-    private static char[] DistributeBlocks(int working, int permission, int input, int total, int columns)
+    private static char[] DistributeBlocks(int permission, int done, int working, int idle, int total, int columns)
     {
         var result = new char[columns];
         Array.Fill(result, ' ');
         if (total == 0) return result;
 
-        var counts = new[] { working, permission, input };
-        var keys = new[] { 'w', 'p', 'i' };
+        var counts = new[] { permission, done, working, idle };
+        var keys = new[] { 'p', 'd', 'w', 'i' };
 
         double[] percentages = counts.Select(c => (double)c / total * columns).ToArray();
         int[] allocated = percentages.Select(p => (int)Math.Floor(p)).ToArray();
