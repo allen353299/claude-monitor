@@ -71,10 +71,12 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
     public Task StartAsync(CancellationToken ct = default) => _scanner.StartAsync(ct);
 
+    private SessionVm? FindSession(string id) => Sessions.FirstOrDefault(v => v.Id == id);
+
     private async Task ActivateSessionAsync(string? sessionId)
     {
         if (string.IsNullOrEmpty(sessionId)) return;
-        var vm = Sessions.FirstOrDefault(v => v.Id == sessionId);
+        var vm = FindSession(sessionId);
         if (vm is not null)
         {
             vm.Acknowledge();
@@ -101,7 +103,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         Dispatcher.UIThread.Post(() =>
         {
             var session = e.Session;
-            var existing = Sessions.FirstOrDefault(v => v.Id == session.Id);
+            var existing = FindSession(session.Id);
             if (existing is not null)
             {
                 existing.UpdateFrom(session);
@@ -121,7 +123,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            var existing = Sessions.FirstOrDefault(v => v.Id == e.SessionId);
+            var existing = FindSession(e.SessionId);
             if (existing is not null)
                 Sessions.Remove(existing);
         });

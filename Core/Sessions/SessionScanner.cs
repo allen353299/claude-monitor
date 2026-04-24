@@ -288,17 +288,13 @@ public sealed class SessionScanner : ISessionScanner
             IsLive: isLive,
             LastActivity: mtime.Value);
 
-        var isChanged = true;
+        Session? previous = null;
         _sessionsByPath.AddOrUpdate(
             path,
             _ => session,
-            (_, existing) =>
-            {
-                isChanged = !SessionsEqual(existing, session);
-                return session;
-            });
+            (_, existing) => { previous = existing; return session; });
 
-        if (isChanged)
+        if (previous is null || !SessionsEqual(previous, session))
         {
             SessionUpdated?.Invoke(this, new SessionUpdatedEventArgs(session));
         }

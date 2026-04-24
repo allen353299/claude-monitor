@@ -65,19 +65,19 @@ public static class SessionEnricher
             {
                 case AssistantEntry a:
                     {
-                        var text = LastTextBlock(a.Message.Content);
+                        var text = FindLast<TextContent>(a.Message.Content)?.Text;
                         if (!string.IsNullOrWhiteSpace(text))
                         {
                             return Truncate(text.Trim(), LatestMessageMaxLen);
                         }
 
-                        var toolUse = LastToolUse(a.Message.Content);
-                        if (toolUse != null)
+                        var toolName = FindLast<ToolUseContent>(a.Message.Content)?.Name;
+                        if (!string.IsNullOrEmpty(toolName))
                         {
-                            return Truncate($"Executing {toolUse}...", LatestMessageMaxLen);
+                            return Truncate($"Executing {toolName}...", LatestMessageMaxLen);
                         }
 
-                        var thinking = LastThinkingBlock(a.Message.Content);
+                        var thinking = FindLast<ThinkingContent>(a.Message.Content)?.Thinking;
                         if (!string.IsNullOrWhiteSpace(thinking))
                         {
                             return Truncate(thinking.Trim(), LatestMessageMaxLen);
@@ -109,38 +109,11 @@ public static class SessionEnricher
         return count;
     }
 
-    private static string? LastTextBlock(List<MessageContent> content)
+    private static T? FindLast<T>(IReadOnlyList<MessageContent> content) where T : MessageContent
     {
         for (int i = content.Count - 1; i >= 0; i--)
         {
-            if (content[i] is TextContent t && !string.IsNullOrWhiteSpace(t.Text))
-            {
-                return t.Text;
-            }
-        }
-        return null;
-    }
-
-    private static string? LastThinkingBlock(List<MessageContent> content)
-    {
-        for (int i = content.Count - 1; i >= 0; i--)
-        {
-            if (content[i] is ThinkingContent th && !string.IsNullOrWhiteSpace(th.Thinking))
-            {
-                return th.Thinking;
-            }
-        }
-        return null;
-    }
-
-    private static string? LastToolUse(List<MessageContent> content)
-    {
-        for (int i = content.Count - 1; i >= 0; i--)
-        {
-            if (content[i] is ToolUseContent tu && !string.IsNullOrEmpty(tu.Name))
-            {
-                return tu.Name;
-            }
+            if (content[i] is T match) return match;
         }
         return null;
     }
