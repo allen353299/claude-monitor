@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ClaudeMonitor.App.ViewModels"
+        xmlns:theme="clr-namespace:ClaudeMonitor.App.Theme"
         mc:Ignorable="d"
         x:Class="ClaudeMonitor.App.Views.PopoverWindow"
         x:DataType="vm:PopoverViewModel"
@@ -192,11 +193,11 @@
                                         Command="{Binding $parent[ItemsControl].((vm:PopoverViewModel)DataContext).ActivateSessionCommand}"
                                         CommandParameter="{Binding Id}">
                                     <Grid>
-                                        <Rectangle Fill="#ff6600"
+                                        <Rectangle Fill="{x:Static theme:StatusPalette.Attention}"
                                                    Opacity="0"
                                                    IsHitTestVisible="False"
                                                    Classes.glow-urgent="{Binding ShouldGlowUrgent}" />
-                                        <Rectangle Fill="#06b6d4"
+                                        <Rectangle Fill="{x:Static theme:StatusPalette.Done}"
                                                    Opacity="0"
                                                    IsHitTestVisible="False"
                                                    Classes.glow-done="{Binding ShouldGlowDone}" />
@@ -222,7 +223,7 @@
                                             <TextBlock Text="{Binding PendingTool}"
                                                        FontFamily="{StaticResource MonoFont}"
                                                        FontSize="10"
-                                                       Foreground="#ff6600"
+                                                       Foreground="{x:Static theme:StatusPalette.Attention}"
                                                        VerticalAlignment="Center"
                                                        IsVisible="{Binding PendingTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                         </StackPanel>

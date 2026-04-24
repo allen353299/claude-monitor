@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Media;
+using ClaudeMonitor.App.Theme;
 using ClaudeMonitor.Core;
 using ClaudeMonitor.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -64,19 +65,13 @@ public sealed partial class SessionVm : ObservableObject
         }
     }
 
-    public IBrush StatusColor
+    public IBrush StatusColor => Status switch
     {
-        get
-        {
-            if (Status == SessionStatus.Working)
-                return new SolidColorBrush(Color.Parse("#22c55e"));
-            if (Status == SessionStatus.NeedsAttention)
-                return new SolidColorBrush(Color.Parse("#ff6600"));
-            if (Status == SessionStatus.WaitingForInput)
-                return new SolidColorBrush(Color.Parse(IsDoneRecent ? "#06b6d4" : "#666666"));
-            return new SolidColorBrush(Color.Parse("#666666"));
-        }
-    }
+        SessionStatus.Working => StatusPalette.Working,
+        SessionStatus.NeedsAttention => StatusPalette.Attention,
+        SessionStatus.WaitingForInput => IsDoneRecent ? StatusPalette.Done : StatusPalette.Idle,
+        _ => StatusPalette.Idle,
+    };
 
     public string? TitleOrFirstPrompt => !string.IsNullOrWhiteSpace(CustomTitle) ? CustomTitle : FirstPrompt;
 

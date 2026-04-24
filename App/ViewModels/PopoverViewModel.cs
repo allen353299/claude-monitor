@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Threading;
+using ClaudeMonitor.App.Theme;
 using ClaudeMonitor.Core.Models;
 using ClaudeMonitor.Core.Platform;
 using ClaudeMonitor.Core.Sessions;
@@ -18,12 +19,6 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 {
     private const int PixelColumns = 28;
     private static readonly TimeSpan TimeBasedPropertyRefreshInterval = TimeSpan.FromMinutes(1);
-
-    private static readonly IBrush WorkingBrush = new SolidColorBrush(Color.Parse("#22c55e"));
-    private static readonly IBrush PermissionBrush = new SolidColorBrush(Color.Parse("#ff6600"));
-    private static readonly IBrush DoneBrush = new SolidColorBrush(Color.Parse("#06b6d4"));
-    private static readonly IBrush IdleBrush = new SolidColorBrush(Color.Parse("#666666"));
-    private static readonly IBrush EmptyBrush = new SolidColorBrush(Color.FromArgb(0x0f, 0xff, 0xff, 0xff));
 
     private readonly ISessionScanner _scanner;
     private readonly ISessionActivator _activator;
@@ -51,7 +46,7 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
 
         for (int i = 0; i < PixelColumns; i++)
         {
-            PixelBlocks.Add(new PixelBlock { Color = EmptyBrush });
+            PixelBlocks.Add(new PixelBlock { Color = StatusPalette.PixelEmpty });
         }
 
         foreach (var s in _scanner.CurrentSessions)
@@ -182,11 +177,11 @@ public sealed class PopoverViewModel : ObservableObject, IAsyncDisposable
         {
             PixelBlocks[i].Color = layout[i] switch
             {
-                'w' => WorkingBrush,
-                'p' => PermissionBrush,
-                'd' => DoneBrush,
-                'i' => IdleBrush,
-                _ => EmptyBrush,
+                'w' => StatusPalette.Working,
+                'p' => StatusPalette.Attention,
+                'd' => StatusPalette.Done,
+                'i' => StatusPalette.Idle,
+                _ => StatusPalette.PixelEmpty,
             };
         }
     }
