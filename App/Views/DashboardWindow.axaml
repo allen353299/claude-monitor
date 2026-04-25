@@ -60,9 +60,11 @@
         </Style>
     </Window.Styles>
 
-    <TabControl SelectedIndex="{CompiledBinding SelectedTabIndex, Mode=TwoWay}"
-                Background="Transparent"
+    <TabControl Background="Transparent"
                 Padding="0">
+            <TabControl.SelectedIndex>
+                <Binding Path="SelectedTabIndex" Mode="TwoWay"/>
+            </TabControl.SelectedIndex>
             <TabItem Header="MONITOR">
                 <Grid Margin="12" DataContext="{Binding Monitor.Popover}">
                     <TextBlock Text="NO ACTIVE SESSIONS"
