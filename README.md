@@ -1,22 +1,22 @@
 # claude-monitor
 
-A lightweight Windows popover for monitoring all your Claude Code sessions at a glance.
+A Windows desktop monitor for Claude Code sessions — see at a glance which session is working, which needs you, which is idle.
 
-Always-on-top floating window showing live session status, with one-click focus to the matching terminal.
+## Highlights
 
-## Features
-
-- **Live status per session**
-  - `Processing` (green) — Claude is actively running a tool or generating output
-  - `Needs attention` (orange, blinking) — a tool call awaits your approval
-  - `Done` (cyan, blinking for 1 hour) — the turn just ended, ready for next prompt
-  - `Idle` (gray) — ended turn more than an hour ago
-- **Live-only list** — only shows sessions whose `claude.exe` process is actually alive
-- **Click to focus** — click a card to bring its terminal window to the front (Windows Terminal, Rider, VS Code, PowerShell, etc.)
-- **Recap line** — when a session disconnects, shows the `away_summary` Claude wrote before detaching
-- **Pin toggle** — always-on-top when pinned (📌 white); hides to taskbar when unpinned (📌 gray)
-- **Resizable** — drag any edge or corner
-- **Draggable** — drag the top bar
+- **Live status detection** — parses `~/.claude/projects/**/*.jsonl` and classifies each session as Processing / Needs attention / Done / Idle. Reads pending tool-use entries, applies auto-approved permission rules, and uses recency thresholds to distinguish "just stopped" from "actually idle".
+- **Animated pixel status bar** — 28-column visual breakdown across all sessions, with a sweeping wave through the Processing blocks. Same widget renders in the popover header and the dashboard monitor tab.
+- **Floating popover** — always-on-top, click any session card to focus its terminal (Windows Terminal, Rider, VS Code, Cursor, PowerShell, …).
+- **Taskbar flash + beep** — when a session transitions to Needs attention or just finished its turn, the popover flashes in the taskbar and the system asterisk sound plays once.
+- **Embedded dashboard** with five tabs:
+  - **Monitor** — same live cards as the popover
+  - **History** — every session ever, with USD spend per session and grand total, searchable, click to open the conversation
+  - **Memory** — browse the `~/.claude` memory hierarchy (CLAUDE.md, agents, commands)
+  - **Conversation** — embedded viewer with thinking and tool-use toggles, virtualized list for long sessions
+  - **Settings** — checks GitHub releases for new versions
+- **Popover ↔ Dashboard mutex** — only one window is on screen at a time. Switch with the link icon in the popover header or the POPOVER button at the top-right of the dashboard.
+- **Persistent window state** — both windows remember location and size between launches.
+- **Tray icon** — show / hide popover, open dashboard, quit.
 
 ## Requirements
 
@@ -38,18 +38,18 @@ Or double-click `cm.bat` on Windows.
 ## Project layout
 
 ```
-Core/              cross-platform: JSONL parser, status analyzer, session scanner
-Windows/           Win32 P/Invoke: find & focus terminal windows
+Core/              JSONL parser, status analyzer, session scanner, cost reader, memory reader
+Windows/           Win32 P/Invoke: focus terminal, FlashWindowEx, MessageBeep
 Mac/               (stub, reserved for future)
-App/               Avalonia UI (XAML, ViewModels)
-Core.UnitTests/    xUnit unit tests (138 tests)
+App/               Avalonia UI (XAML, ViewModels, composition root)
+Core.UnitTests/    xUnit (138 tests)
 ```
 
 ## Tech stack
 
 - **.NET 10** + **Avalonia 12** — cross-platform desktop UI
-- **CommunityToolkit.Mvvm** — lightweight MVVM
-- **Win32 P/Invoke** — `EnumWindows`, `Toolhelp32`, `SetForegroundWindow` for window activation
+- **CommunityToolkit.Mvvm** — lightweight MVVM with source generators
+- **Win32 P/Invoke** — `EnumWindows`, `Toolhelp32`, `SetForegroundWindow`, `FlashWindowEx`, `MessageBeep`
 
 ## Credit
 
