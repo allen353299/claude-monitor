@@ -135,6 +135,18 @@
             <Setter Property="Opacity" Value="1" />
         </Style>
 
+        <Style Selector="Rectangle.wave-block">
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Rectangle.wave-block.lit">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
+
         <Style Selector="Border.card-compact">
             <Setter Property="Padding" Value="16,4" />
         </Style>
@@ -223,7 +235,9 @@
                         <DataTemplate x:DataType="vm:PixelBlock">
                             <Rectangle Fill="{Binding Color}"
                                        Margin="1,0"
-                                       RadiusX="1" RadiusY="1" />
+                                       RadiusX="1" RadiusY="1"
+                                       Classes.wave-block="{Binding IsWorking}"
+                                       Classes.lit="{Binding IsLit}" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
