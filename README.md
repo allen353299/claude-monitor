@@ -21,7 +21,7 @@ Always-on-top floating window showing live session status, with one-click focus 
 ## Requirements
 
 - Windows 10 / 11
-- [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (already satisfied if you have the SDK)
+- [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (already satisfied if you have the SDK)
 - Claude Code installed and running in any terminal
 
 ## Build & run
@@ -33,7 +33,7 @@ dotnet build
 dotnet run --project App
 ```
 
-Or double-click `run.bat` on Windows.
+Or double-click `cm.bat` on Windows.
 
 ## Project layout
 
@@ -42,12 +42,12 @@ Core/              cross-platform: JSONL parser, status analyzer, session scanne
 Windows/           Win32 P/Invoke: find & focus terminal windows
 Mac/               (stub, reserved for future)
 App/               Avalonia UI (XAML, ViewModels)
-Core.UnitTests/    xUnit unit tests for StatusAnalyzer (31 tests)
+Core.UnitTests/    xUnit unit tests (138 tests)
 ```
 
 ## Tech stack
 
-- **.NET 8** + **Avalonia 11** — cross-platform desktop UI
+- **.NET 10** + **Avalonia 12** — cross-platform desktop UI
 - **CommunityToolkit.Mvvm** — lightweight MVVM
 - **Win32 P/Invoke** — `EnumWindows`, `Toolhelp32`, `SetForegroundWindow` for window activation
 

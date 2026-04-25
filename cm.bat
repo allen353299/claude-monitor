@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 
-set EXE=App\bin\Debug\net8.0\ClaudeMonitor.App.exe
+set EXE=App\bin\Debug\net10.0\ClaudeMonitor.App.exe
 
 dotnet build App\App.csproj --nologo -v q
 if errorlevel 1 (
