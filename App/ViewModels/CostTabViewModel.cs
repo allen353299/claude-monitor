@@ -64,6 +64,7 @@ public sealed class SessionCostVm
     public SessionCostVm(SessionCost cost) => _cost = cost;
 
     public string SessionId => _cost.Id.Value;
+    public ClaudeMonitor.Core.JsonlPath JsonlPath => _cost.JsonlPath;
     public string ProjectPath => _cost.ProjectPath;
     public string Model => _cost.Model;
     public string UsdText => $"${_cost.UsdTotal:0.0000}";
@@ -75,4 +76,10 @@ public sealed class SessionCostVm
         _cost.LastActivity == DateTimeOffset.MinValue
             ? "—"
             : _cost.LastActivity.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
+
+    public string PrimaryLabel => !string.IsNullOrWhiteSpace(_cost.CustomTitle)
+        ? _cost.CustomTitle!
+        : _cost.ProjectPath;
+
+    public bool HasCustomTitle => !string.IsNullOrWhiteSpace(_cost.CustomTitle);
 }

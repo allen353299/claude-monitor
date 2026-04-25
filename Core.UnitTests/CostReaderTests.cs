@@ -81,6 +81,19 @@ public class CostReaderTests
     }
 
     [Fact]
+    public async Task ReadAsync_PicksUpCustomTitleFromJsonl()
+    {
+        using var tmp = new TempDir();
+        tmp.WriteFile("projects/D--foo/abc.jsonl", string.Join('\n', new[]
+        {
+            """{"type":"custom-title","customTitle":"my-feature-branch","sessionId":"abc"}""",
+            """{"type":"assistant","message":{"model":"claude-sonnet-4-6","usage":{"input_tokens":100,"output_tokens":100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}""",
+        }));
+        var report = await new CostReader(new ProjectPathDecoder(), tmp.Path).ReadAsync();
+        Assert.Equal("my-feature-branch", report.Sessions.Single().CustomTitle);
+    }
+
+    [Fact]
     public async Task ReadAsync_LatestTimestampBecomesLastActivity()
     {
         using var tmp = new TempDir();

@@ -2,7 +2,9 @@ namespace ClaudeMonitor.Core.Sessions;
 
 public sealed record SessionCost(
     SessionId Id,
+    JsonlPath JsonlPath,
     string ProjectPath,
+    string? CustomTitle,
     string Model,
     long InputTokens,
     long OutputTokens,

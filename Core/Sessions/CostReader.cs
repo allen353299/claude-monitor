@@ -57,6 +57,7 @@ public sealed class CostReader : ICostReader
     {
         long input = 0, output = 0, cacheWrite = 0, cacheRead = 0;
         string? model = null;
+        string? customTitle = null;
         DateTimeOffset lastActivity = DateTimeOffset.MinValue;
 
         try
@@ -68,7 +69,7 @@ public sealed class CostReader : ICostReader
                 ct.ThrowIfCancellationRequested();
                 var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(line)) continue;
-                AccumulateLine(line, ref input, ref output, ref cacheWrite, ref cacheRead, ref model, ref lastActivity);
+                AccumulateLine(line, ref input, ref output, ref cacheWrite, ref cacheRead, ref model, ref customTitle, ref lastActivity);
             }
         }
         catch (IOException) { return null; }
@@ -84,7 +85,9 @@ public sealed class CostReader : ICostReader
 
         return new SessionCost(
             sessionId,
+            JsonlPath.From(filePath),
             projectPath,
+            customTitle,
             model ?? "unknown",
             input, output, cacheWrite, cacheRead,
             usd,
@@ -94,14 +97,25 @@ public sealed class CostReader : ICostReader
     private static void AccumulateLine(
         string line,
         ref long input, ref long output, ref long cacheWrite, ref long cacheRead,
-        ref string? model, ref DateTimeOffset lastActivity)
+        ref string? model, ref string? customTitle, ref DateTimeOffset lastActivity)
     {
         try
         {
             using var doc = JsonDocument.Parse(line);
             var root = doc.RootElement;
             if (!root.TryGetProperty("type", out var typeEl)) return;
-            if (typeEl.GetString() != "assistant") return;
+            var type = typeEl.GetString();
+
+            if (type == "custom-title"
+                && root.TryGetProperty("customTitle", out var titleEl)
+                && titleEl.ValueKind == JsonValueKind.String)
+            {
+                var t = titleEl.GetString();
+                if (!string.IsNullOrWhiteSpace(t)) customTitle = t;
+                return;
+            }
+
+            if (type != "assistant") return;
 
             if (root.TryGetProperty("message", out var msgEl))
             {
