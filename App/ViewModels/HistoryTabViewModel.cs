@@ -67,14 +67,28 @@ public sealed class HistoryItemVm
 
     public HistoryItemVm(HistoryEntry entry) => _entry = entry;
 
+    public ClaudeMonitor.Core.SessionId Id => _entry.Id;
     public string SessionId => _entry.Id.Value;
     public string ProjectPath => _entry.ProjectPath;
     public string Display => _entry.LatestDisplay;
     public string LastActivityText => _entry.LastActivityAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
     public int MessageCount => _entry.MessageCount;
+    public ClaudeMonitor.Core.JsonlPath? JsonlPath => _entry.JsonlPath;
+    public bool HasJsonlPath => _entry.JsonlPath.HasValue;
+
+    public string PrimaryLabel => !string.IsNullOrWhiteSpace(_entry.CustomTitle)
+        ? _entry.CustomTitle!
+        : _entry.LatestDisplay;
+
+    public string DetailLine => !string.IsNullOrWhiteSpace(_entry.Recap)
+        ? _entry.Recap!
+        : _entry.LatestDisplay;
+
+    public string MetaLine => $"{_entry.Id.Value}  ·  {_entry.MessageCount} msg  ·  {LastActivityText}";
 
     public bool Matches(string query) =>
-        (_entry.LatestDisplay?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+        (_entry.CustomTitle?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+        || (_entry.LatestDisplay?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
         || (_entry.ProjectPath?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
         || _entry.Id.Value.Contains(query, StringComparison.OrdinalIgnoreCase);
 }

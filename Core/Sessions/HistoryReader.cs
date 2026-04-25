@@ -4,8 +4,11 @@ namespace ClaudeMonitor.Core.Sessions;
 
 public sealed class HistoryReader : IHistoryReader
 {
+    private const int EnrichTailLines = 30;
+
     private readonly string _filePath;
     private readonly string _projectsRoot;
+    private readonly SessionEnricher _enricher = new();
 
     public HistoryReader(string? claudeHome = null)
     {
@@ -35,7 +38,36 @@ public sealed class HistoryReader : IHistoryReader
         catch (IOException) { return Array.Empty<HistoryEntry>(); }
         catch (UnauthorizedAccessException) { return Array.Empty<HistoryEntry>(); }
 
-        return Aggregate(raw, _projectsRoot);
+        var aggregated = Aggregate(raw, _projectsRoot);
+        return await EnrichAsync(aggregated, ct).ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyList<HistoryEntry>> EnrichAsync(IReadOnlyList<HistoryEntry> entries, CancellationToken ct)
+    {
+        var result = new List<HistoryEntry>(entries.Count);
+        foreach (var entry in entries)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (entry.JsonlPath is null)
+            {
+                result.Add(entry);
+                continue;
+            }
+
+            try
+            {
+                var tail = await SessionParser.ParseTailAsync(entry.JsonlPath.Value, EnrichTailLines, ct).ConfigureAwait(false);
+                var enriched = _enricher.Enrich(tail);
+                result.Add(entry with
+                {
+                    CustomTitle = enriched.CustomTitle?.Value,
+                    Recap = enriched.Recap?.Value,
+                });
+            }
+            catch (IOException) { result.Add(entry); }
+            catch (UnauthorizedAccessException) { result.Add(entry); }
+        }
+        return result;
     }
 
     private static bool TryParseLine(string line, out RawLine entry)
@@ -88,7 +120,9 @@ public sealed class HistoryReader : IHistoryReader
                 kv.Value.First,
                 kv.Value.Last,
                 kv.Value.LastDisplay,
-                kv.Value.Count));
+                kv.Value.Count,
+                CustomTitle: null,
+                Recap: null));
         }
         list.Sort((a, b) => b.LastActivityAt.CompareTo(a.LastActivityAt));
         return list;

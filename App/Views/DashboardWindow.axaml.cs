@@ -93,6 +93,14 @@ public partial class DashboardWindow : Window
         vm.Memory.SelectedFile = file;
     }
 
+    private void OnHistoryRowClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control c || c.Tag is not HistoryItemVm item) return;
+        if (item.JsonlPath is null) return;
+        if (DataContext is not DashboardViewModel vm) return;
+        vm.OpenConversation(item.JsonlPath.Value, item.PrimaryLabel);
+    }
+
     private void OnOpenReleaseClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Control c || c.Tag is not string url) return;

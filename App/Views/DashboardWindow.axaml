@@ -193,42 +193,45 @@
                             <ItemsControl ItemsSource="{Binding FilteredItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HistoryItemVm">
-                                        <Border BorderBrush="#222222"
+                                        <Button Classes="session-card"
+                                                Background="Transparent"
+                                                BorderBrush="#222222"
                                                 BorderThickness="0,0,0,1"
-                                                Padding="12,8">
+                                                Padding="12,8"
+                                                HorizontalContentAlignment="Stretch"
+                                                HorizontalAlignment="Stretch"
+                                                Cursor="Hand"
+                                                CornerRadius="0"
+                                                IsEnabled="{Binding HasJsonlPath}"
+                                                Click="OnHistoryRowClick"
+                                                Tag="{Binding}">
                                             <StackPanel Spacing="2">
-                                                <Grid ColumnDefinitions="*,Auto">
-                                                    <TextBlock Grid.Column="0"
-                                                               Text="{Binding ProjectPath}"
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="{Binding PrimaryLabel}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#ffffff"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding ProjectPath, StringFormat='({0})'}"
                                                                FontFamily="{StaticResource MonoFont}"
                                                                FontSize="11"
-                                                               Foreground="#cccccc"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Grid.Column="1"
-                                                               Text="{Binding LastActivityText}"
-                                                               FontFamily="{StaticResource MonoFont}"
-                                                               FontSize="10"
-                                                               Foreground="#666666"
-                                                               Margin="8,0,0,0" />
-                                                </Grid>
-                                                <TextBlock Text="{Binding Display}"
+                                                               Foreground="#888888"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding DetailLine}"
                                                            FontFamily="{StaticResource MonoFont}"
-                                                           FontSize="11"
+                                                           FontSize="10"
                                                            Foreground="#888888"
                                                            TextWrapping="NoWrap"
                                                            TextTrimming="CharacterEllipsis" />
-                                                <StackPanel Orientation="Horizontal" Spacing="12">
-                                                    <TextBlock Text="{Binding SessionId}"
-                                                               FontFamily="{StaticResource MonoFont}"
-                                                               FontSize="9"
-                                                               Foreground="#555555" />
-                                                    <TextBlock Text="{Binding MessageCount, StringFormat='{}{0} msgs'}"
-                                                               FontFamily="{StaticResource MonoFont}"
-                                                               FontSize="9"
-                                                               Foreground="#555555" />
-                                                </StackPanel>
+                                                <TextBlock Text="{Binding MetaLine}"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="9"
+                                                           Foreground="#555555" />
                                             </StackPanel>
-                                        </Border>
+                                        </Button>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

@@ -7,4 +7,6 @@ public sealed record HistoryEntry(
     DateTimeOffset CreatedAt,
     DateTimeOffset LastActivityAt,
     string LatestDisplay,
-    int MessageCount);
+    int MessageCount,
+    string? CustomTitle,
+    string? Recap);
