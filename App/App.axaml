@@ -5,6 +5,17 @@
 
     <Application.Styles>
         <FluentTheme />
+        <Style Selector="Rectangle.wave-block">
+            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Rectangle.wave-block.lit">
+            <Setter Property="Opacity" Value="1.0" />
+        </Style>
     </Application.Styles>
 
     <TrayIcon.Icons>

@@ -127,24 +127,12 @@
             <Setter Property="Opacity" Value="0" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.05" />
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Grid#DragHandle:pointerover Button.header-action">
             <Setter Property="Opacity" Value="1" />
-        </Style>
-
-        <Style Selector="Rectangle.wave-block">
-            <Setter Property="Opacity" Value="0.35" />
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Rectangle.wave-block.lit">
-            <Setter Property="Opacity" Value="1.0" />
         </Style>
 
         <Style Selector="Border.card-compact">
@@ -167,7 +155,7 @@
                   Background="Transparent"
                   Cursor="SizeAll"
                   PointerPressed="OnDragHandlePressed"
-                  ColumnDefinitions="*,Auto,Auto"
+                  ColumnDefinitions="*,Auto,Auto,Auto"
                   Margin="14,3">
                 <TextBlock Grid.Column="0"
                            Text="{Binding SessionCountText}"
@@ -176,6 +164,29 @@
                            Foreground="#666666"
                            VerticalAlignment="Center" />
                 <Button Grid.Column="1"
+                        Classes="header-action"
+                        Content="&#xE8A7;"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        Width="16" Height="16"
+                        Padding="0"
+                        Margin="0,0,4,0"
+                        Background="Transparent"
+                        Foreground="#888888"
+                        BorderThickness="0"
+                        FontSize="11"
+                        Cursor="Hand"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Open dashboard"
+                        Click="OnOpenDashboardClick">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#222222" />
+                            <Setter Property="Foreground" Value="#ffffff" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+                <Button Grid.Column="2"
                         x:Name="PinButton"
                         Classes="header-action"
                         Content="&#xE840;"
@@ -197,7 +208,7 @@
                         </Style>
                     </Button.Styles>
                 </Button>
-                <Button Grid.Column="2"
+                <Button Grid.Column="3"
                         Classes="header-action"
                         Content="×"
                         Width="16" Height="16"

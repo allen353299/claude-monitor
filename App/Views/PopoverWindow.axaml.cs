@@ -125,7 +125,12 @@ public partial class PopoverWindow : Window
             BeginMoveDrag(e);
     }
 
+    public event EventHandler? DashboardRequested;
+
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
+
+    private void OnOpenDashboardClick(object? sender, RoutedEventArgs e)
+        => DashboardRequested?.Invoke(this, EventArgs.Empty);
 
     private void OnPinClick(object? sender, RoutedEventArgs e)
     {

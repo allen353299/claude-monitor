@@ -102,6 +102,11 @@ public partial class DashboardWindow : Window
     }
 
 
+    public event EventHandler? PopoverRequested;
+
+    private void OnShowPopoverClick(object? sender, RoutedEventArgs e)
+        => PopoverRequested?.Invoke(this, EventArgs.Empty);
+
     private void OnOpenReleaseClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Control c || c.Tag is not string url) return;

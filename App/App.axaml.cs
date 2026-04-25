@@ -33,6 +33,7 @@ public partial class App : Application
             _popover = new PopoverWindow();
             _popoverVm = AppComposition.CreatePopoverViewModel(() => _popover?.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero);
             _popoverVm.ConversationRequested += OnConversationRequested;
+            _popover.DashboardRequested += (_, _) => ShowDashboard();
             _popover.DataContext = _popoverVm;
             desktop.MainWindow = _popover;
             _popover.Show();
@@ -57,7 +58,9 @@ public partial class App : Application
         {
             _dashboard = new DashboardWindow { DataContext = AppComposition.CreateDashboardViewModel(_popoverVm) };
             _dashboard.Closed += (_, _) => _dashboard = null;
+            _dashboard.PopoverRequested += (_, _) => ShowPopover();
         }
+        _popover?.Hide();
         _dashboard.Show();
         _dashboard.Activate();
     }
@@ -88,6 +91,7 @@ public partial class App : Application
     private void ShowPopover()
     {
         if (_popover is null) return;
+        _dashboard?.Hide();
         _popover.Show();
         _popover.Activate();
     }
