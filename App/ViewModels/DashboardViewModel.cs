@@ -1,3 +1,4 @@
+using ClaudeMonitor.Core;
 using ClaudeMonitor.Core.Sessions;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -5,7 +6,11 @@ namespace ClaudeMonitor.App.ViewModels;
 
 public sealed partial class DashboardViewModel : ObservableObject
 {
+    public const int ConversationTabIndex = 5;
+
     [ObservableProperty] private int _selectedTabIndex;
+
+    [ObservableProperty] private ConversationViewModel? _currentConversation;
 
     public MonitorTabViewModel Monitor { get; }
     public HistoryTabViewModel History { get; }
@@ -23,6 +28,14 @@ public sealed partial class DashboardViewModel : ObservableObject
         History = new HistoryTabViewModel(historyReader);
         Memory = new MemoryTabViewModel(memoryReader);
         Cost = new CostTabViewModel(costReader);
+    }
+
+    public void OpenConversation(JsonlPath path, string title)
+    {
+        var vm = new ConversationViewModel(path, title);
+        CurrentConversation = vm;
+        SelectedTabIndex = ConversationTabIndex;
+        _ = vm.LoadAsync();
     }
 
     partial void OnSelectedTabIndexChanged(int value)

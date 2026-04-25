@@ -5,12 +5,14 @@ namespace ClaudeMonitor.Core.Sessions;
 public sealed class HistoryReader : IHistoryReader
 {
     private readonly string _filePath;
+    private readonly string _projectsRoot;
 
     public HistoryReader(string? claudeHome = null)
     {
         var home = claudeHome
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
         _filePath = Path.Combine(home, "history.jsonl");
+        _projectsRoot = Path.Combine(home, "projects");
     }
 
     public async Task<IReadOnlyList<HistoryEntry>> ReadAsync(CancellationToken ct = default)
@@ -33,7 +35,7 @@ public sealed class HistoryReader : IHistoryReader
         catch (IOException) { return Array.Empty<HistoryEntry>(); }
         catch (UnauthorizedAccessException) { return Array.Empty<HistoryEntry>(); }
 
-        return Aggregate(raw);
+        return Aggregate(raw, _projectsRoot);
     }
 
     private static bool TryParseLine(string line, out RawLine entry)
@@ -58,7 +60,7 @@ public sealed class HistoryReader : IHistoryReader
         catch (ArgumentException) { return false; }
     }
 
-    private static IReadOnlyList<HistoryEntry> Aggregate(List<RawLine> raw)
+    private static IReadOnlyList<HistoryEntry> Aggregate(List<RawLine> raw, string projectsRoot)
     {
         var bySession = new Dictionary<SessionId, (string Project, DateTimeOffset First, DateTimeOffset Last, string LastDisplay, int Count)>();
         foreach (var r in raw)
@@ -82,6 +84,7 @@ public sealed class HistoryReader : IHistoryReader
             list.Add(new HistoryEntry(
                 kv.Key,
                 kv.Value.Project,
+                ResolveJsonlPath(projectsRoot, kv.Value.Project, kv.Key),
                 kv.Value.First,
                 kv.Value.Last,
                 kv.Value.LastDisplay,
@@ -89,6 +92,15 @@ public sealed class HistoryReader : IHistoryReader
         }
         list.Sort((a, b) => b.LastActivityAt.CompareTo(a.LastActivityAt));
         return list;
+    }
+
+    private static JsonlPath? ResolveJsonlPath(string projectsRoot, string projectPath, SessionId sessionId)
+    {
+        if (string.IsNullOrEmpty(projectPath)) return null;
+        var encoded = ProjectPathEncoder.Encode(projectPath);
+        var candidate = Path.Combine(projectsRoot, encoded, sessionId.Value + ".jsonl");
+        if (!File.Exists(candidate)) return null;
+        return JsonlPath.From(candidate);
     }
 
     private readonly record struct RawLine(SessionId Id, string Project, DateTimeOffset Timestamp, string Display);

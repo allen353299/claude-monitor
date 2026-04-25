@@ -17,6 +17,30 @@ public class HistoryReaderTests
     }
 
     [Fact]
+    public async Task ReadAsync_ResolvesJsonlPathWhenFileExists()
+    {
+        using var tmp = new TempDir();
+        tmp.WriteFile("history.jsonl",
+            """{"display":"hi","timestamp":1000,"project":"D:\\git","sessionId":"abc"}""");
+        tmp.WriteFile("projects/D--git/abc.jsonl", "{}");
+
+        var entries = await new HistoryReader(tmp.Path).ReadAsync();
+        var entry = Assert.Single(entries);
+        Assert.NotNull(entry.JsonlPath);
+        Assert.EndsWith("abc.jsonl", entry.JsonlPath.Value.Value);
+    }
+
+    [Fact]
+    public async Task ReadAsync_JsonlPathNullWhenFileMissing()
+    {
+        using var tmp = new TempDir();
+        tmp.WriteFile("history.jsonl",
+            """{"display":"hi","timestamp":1000,"project":"D:\\nope","sessionId":"abc"}""");
+        var entries = await new HistoryReader(tmp.Path).ReadAsync();
+        Assert.Null(entries[0].JsonlPath);
+    }
+
+    [Fact]
     public async Task ReadAsync_DeduplicatesBySessionId_KeepsEarliestAndLatest()
     {
         using var tmp = new TempDir();
