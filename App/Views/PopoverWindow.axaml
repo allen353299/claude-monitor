@@ -355,7 +355,7 @@
                                                    TextTrimming="CharacterEllipsis"
                                                    IsVisible="{Binding ShowProjectPath}" />
                                         <TextBlock Text="{Binding RecapOrLatest}"
-                                                   Margin="14,0,0,0"
+                                                   Margin="14,0,40,0"
                                                    FontFamily="{StaticResource MonoFont}"
                                                    FontSize="10"
                                                    Foreground="#666666"
