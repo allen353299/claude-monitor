@@ -44,30 +44,33 @@ public sealed class HistoryReader : IHistoryReader
 
     private async Task<IReadOnlyList<HistoryEntry>> EnrichAsync(IReadOnlyList<HistoryEntry> entries, CancellationToken ct)
     {
-        var result = new List<HistoryEntry>(entries.Count);
-        foreach (var entry in entries)
-        {
-            ct.ThrowIfCancellationRequested();
-            if (entry.JsonlPath is null)
+        var enriched = new HistoryEntry[entries.Count];
+        await Parallel.ForEachAsync(
+            Enumerable.Range(0, entries.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = ct },
+            async (index, token) =>
             {
-                result.Add(entry);
-                continue;
-            }
+                enriched[index] = await EnrichSingleAsync(entries[index], token).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+        return enriched;
+    }
 
-            try
+    private async Task<HistoryEntry> EnrichSingleAsync(HistoryEntry entry, CancellationToken ct)
+    {
+        if (entry.JsonlPath is null) return entry;
+        try
+        {
+            var tail = await SessionParser.ParseTailAsync(entry.JsonlPath.Value, EnrichTailLines, ct).ConfigureAwait(false);
+            var data = _enricher.Enrich(tail);
+            return entry with
             {
-                var tail = await SessionParser.ParseTailAsync(entry.JsonlPath.Value, EnrichTailLines, ct).ConfigureAwait(false);
-                var enriched = _enricher.Enrich(tail);
-                result.Add(entry with
-                {
-                    CustomTitle = enriched.CustomTitle?.Value,
-                    Recap = enriched.Recap?.Value,
-                });
-            }
-            catch (IOException) { result.Add(entry); }
-            catch (UnauthorizedAccessException) { result.Add(entry); }
+                CustomTitle = data.CustomTitle?.Value,
+                Recap = data.Recap?.Value,
+            };
         }
-        return result;
+        catch (IOException) { return entry; }
+        catch (UnauthorizedAccessException) { return entry; }
+        catch (System.Text.Json.JsonException) { return entry; }
     }
 
     private static bool TryParseLine(string line, out RawLine entry)
