@@ -391,7 +391,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="CONVERSATION" IsVisible="{Binding HasConversation}">
-                <Grid DataContext="{Binding CurrentConversation}" RowDefinitions="Auto,*">
+                <Grid DataContext="{Binding CurrentConversation}" x:DataType="vm:ConversationViewModel" RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Background="#141414"
                             BorderBrush="#222222"
