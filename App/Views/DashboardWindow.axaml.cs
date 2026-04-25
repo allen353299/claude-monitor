@@ -101,12 +101,6 @@ public partial class DashboardWindow : Window
         vm.OpenConversation(item.JsonlPath.Value, item.PrimaryLabel);
     }
 
-    private void OnCostRowClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not Control c || c.Tag is not SessionCostVm item) return;
-        if (DataContext is not DashboardViewModel vm) return;
-        vm.OpenConversation(item.JsonlPath, item.PrimaryLabel);
-    }
 
     private void OnOpenReleaseClick(object? sender, RoutedEventArgs e)
     {
