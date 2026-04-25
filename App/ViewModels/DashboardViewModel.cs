@@ -10,7 +10,11 @@ public sealed partial class DashboardViewModel : ObservableObject
 
     [ObservableProperty] private int _selectedTabIndex;
 
-    [ObservableProperty] private ConversationViewModel? _currentConversation;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasConversation))]
+    private ConversationViewModel? _currentConversation;
+
+    public bool HasConversation => CurrentConversation is not null;
 
     public MonitorTabViewModel Monitor { get; }
     public HistoryTabViewModel History { get; }

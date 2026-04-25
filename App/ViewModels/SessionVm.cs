@@ -20,7 +20,13 @@ public sealed partial class SessionVm : ObservableObject
     [ObservableProperty] private string? _latestMessage;
     [ObservableProperty] private string? _recap;
     [ObservableProperty] private SessionStatus _status;
-    [ObservableProperty] private string? _pendingTool;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingTool))]
+    private string? _pendingTool;
+
+    public bool HasPendingTool => !string.IsNullOrEmpty(PendingTool);
+
     [ObservableProperty] private int _messageCount;
     [ObservableProperty] private bool _isLive;
     [ObservableProperty] private DateTimeOffset _lastActivity;

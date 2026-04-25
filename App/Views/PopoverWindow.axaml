@@ -344,7 +344,7 @@
                                                        FontSize="10"
                                                        Foreground="{x:Static theme:StatusPalette.Attention}"
                                                        VerticalAlignment="Center"
-                                                       IsVisible="{Binding PendingTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                                       IsVisible="{Binding HasPendingTool}" />
                                         </StackPanel>
                                         <TextBlock Text="{Binding ProjectPath}"
                                                    Margin="14,0,0,0"

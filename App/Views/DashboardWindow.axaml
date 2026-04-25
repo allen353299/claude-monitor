@@ -126,7 +126,7 @@
                                                                            FontSize="10"
                                                                            Foreground="{x:Static theme:StatusPalette.Attention}"
                                                                            VerticalAlignment="Center"
-                                                                           IsVisible="{Binding PendingTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                                                           IsVisible="{Binding HasPendingTool}" />
                                                             </StackPanel>
                                                             <TextBlock Text="{Binding ProjectPath}"
                                                                        Margin="14,0,0,0"
@@ -477,7 +477,7 @@
                                    FontFamily="{StaticResource MonoFont}"
                                    FontSize="12"
                                    Foreground="#cccccc"
-                                   IsVisible="{Binding LatestVersion, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                   IsVisible="{Binding HasLatestVersion}" />
                     </StackPanel>
                     <StackPanel Spacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="12">
@@ -502,7 +502,7 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
-            <TabItem Header="CONVERSATION" IsVisible="{Binding CurrentConversation, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TabItem Header="CONVERSATION" IsVisible="{Binding HasConversation}">
                 <Grid DataContext="{Binding CurrentConversation}" RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Background="#141414"

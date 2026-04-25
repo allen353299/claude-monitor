@@ -15,8 +15,14 @@ public sealed partial class SettingsTabViewModel : ObservableObject
     private static readonly HttpClient SharedHttp = CreateHttpClient();
 
     [ObservableProperty] private string _currentVersion;
-    [ObservableProperty] private string? _latestVersion;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLatestVersion))]
+    private string? _latestVersion;
+
     [ObservableProperty] private string? _latestReleaseUrl;
+
+    public bool HasLatestVersion => !string.IsNullOrEmpty(LatestVersion);
     [ObservableProperty] private string? _updateStatus;
     [ObservableProperty] private bool _isChecking;
     [ObservableProperty] private bool _hasUpdate;
