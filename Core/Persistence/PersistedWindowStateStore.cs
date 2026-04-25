@@ -8,10 +8,13 @@ public readonly record struct PersistedWindowState(int X, int Y, double Width, d
 
 public static class PersistedWindowStateStore
 {
-    public static readonly string DefaultFilePath = Path.Combine(
+    private static readonly string ConfigDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "ClaudeMonitor",
-        "window.json");
+        "ClaudeMonitor");
+
+    public static readonly string DefaultFilePath = Path.Combine(ConfigDirectory, "window.json");
+
+    public static string PathFor(string name) => Path.Combine(ConfigDirectory, name + ".json");
 
     public static bool TryLoad(out PersistedWindowState state) => TryLoad(DefaultFilePath, out state);
 
