@@ -64,10 +64,10 @@ public sealed class CostReader : ICostReader
         {
             await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using var reader = new StreamReader(stream);
-            while (!reader.EndOfStream)
+            string? line;
+            while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) is not null)
             {
                 ct.ThrowIfCancellationRequested();
-                var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 AccumulateLine(line, ref input, ref output, ref cacheWrite, ref cacheRead, ref model, ref customTitle, ref lastActivity);
             }

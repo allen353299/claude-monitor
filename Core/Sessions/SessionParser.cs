@@ -61,11 +61,10 @@ public static class SessionParser
             useAsync: true);
         using var reader = new StreamReader(fs, Encoding.UTF8);
 
-        while (!reader.EndOfStream)
+        string? line;
+        while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) is not null)
         {
             ct.ThrowIfCancellationRequested();
-            var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
-            if (line == null) break;
             lines.Add(line);
         }
 
