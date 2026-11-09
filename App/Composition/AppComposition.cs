@@ -29,7 +29,8 @@ public static class AppComposition
             popover,
             new HistoryReader(),
             new MemoryReader(decoder),
-            new CostReader(decoder));
+            new CostReader(decoder),
+            new SessionDiagnosticsReader());
     }
 
     private static ISessionActivator CreateSessionActivator(ILiveSessionIndex liveSessions)

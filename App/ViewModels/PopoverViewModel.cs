@@ -48,6 +48,8 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
 
     public IRelayCommand<string> ViewConversationCommand { get; }
 
+    public IRelayCommand ToggleCompactCommand { get; }
+
     public event EventHandler<ConversationRequestedEventArgs>? ConversationRequested;
 
     partial void OnIsCompactChanged(bool value)
@@ -62,6 +64,7 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
         _notifications = notifications;
         ActivateSessionCommand = new AsyncRelayCommand<string>(ActivateSessionAsync);
         ViewConversationCommand = new RelayCommand<string>(RequestConversation);
+        ToggleCompactCommand = new RelayCommand(() => IsCompact = !IsCompact);
 
         _scanner.SessionUpdated += OnSessionUpdated;
         _scanner.SessionRemoved += OnSessionRemoved;
@@ -104,12 +107,13 @@ public sealed partial class PopoverViewModel : ObservableObject, IAsyncDisposabl
         if (string.IsNullOrWhiteSpace(sessionId)) return;
         var id = SessionId.From(sessionId);
         var vm = Sessions.FindById(id);
+        var hint = vm?.SessionName;
         if (vm is not null)
         {
             vm.Acknowledge();
             Sessions.Sort(SessionVmRankComparer.Default);
         }
-        await _activator.ActivateAsync(id).ConfigureAwait(false);
+        await _activator.ActivateAsync(id, hint).ConfigureAwait(false);
     }
 
     private void OnSessionsChanged(object? sender, NotifyCollectionChangedEventArgs e)

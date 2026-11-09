@@ -14,6 +14,7 @@ public sealed partial class HistoryTabViewModel : ObservableObject
 {
     private readonly IHistoryReader _historyReader;
     private readonly ICostReader _costReader;
+    private readonly ISessionDiagnosticsReader _diagnosticsReader;
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private bool _isLoading;
@@ -27,10 +28,14 @@ public sealed partial class HistoryTabViewModel : ObservableObject
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
-    public HistoryTabViewModel(IHistoryReader historyReader, ICostReader costReader)
+    public HistoryTabViewModel(
+        IHistoryReader historyReader,
+        ICostReader costReader,
+        ISessionDiagnosticsReader diagnosticsReader)
     {
         _historyReader = historyReader;
         _costReader = costReader;
+        _diagnosticsReader = diagnosticsReader;
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
     }
 
@@ -42,16 +47,19 @@ public sealed partial class HistoryTabViewModel : ObservableObject
         {
             var historyTask = _historyReader.ReadAsync();
             var costTask = _costReader.ReadAsync();
-            await Task.WhenAll(historyTask, costTask);
+            var diagTask = _diagnosticsReader.ReadAsync();
+            await Task.WhenAll(historyTask, costTask, diagTask);
 
             var costsBySession = new Dictionary<SessionId, SessionCost>();
             foreach (var c in costTask.Result.Sessions) costsBySession[c.Id] = c;
+            var diagBySession = diagTask.Result;
 
             AllItems.Clear();
             foreach (var entry in historyTask.Result)
             {
                 costsBySession.TryGetValue(entry.Id, out var cost);
-                AllItems.Add(new HistoryItemVm(entry, cost));
+                diagBySession.TryGetValue(entry.Id, out var diag);
+                AllItems.Add(new HistoryItemVm(entry, cost, diag));
             }
 
             GrandTotalUsd = costTask.Result.GrandTotalUsd;
@@ -85,11 +93,13 @@ public sealed class HistoryItemVm
 {
     private readonly HistoryEntry _entry;
     private readonly SessionCost? _cost;
+    private readonly SessionDiagnostics? _diag;
 
-    public HistoryItemVm(HistoryEntry entry, SessionCost? cost = null)
+    public HistoryItemVm(HistoryEntry entry, SessionCost? cost = null, SessionDiagnostics? diag = null)
     {
         _entry = entry;
         _cost = cost;
+        _diag = diag;
     }
 
     public SessionId Id => _entry.Id;
@@ -116,6 +126,27 @@ public sealed class HistoryItemVm
         ? ""
         : $"{(_cost.InputTokens + _cost.OutputTokens + _cost.CacheReadTokens + _cost.CacheWriteTokens):N0} tok";
     public bool HasCost => _cost is not null && _cost.UsdTotal > 0;
+
+    public string ReReadText => _diag is null || _diag.ReadCalls == 0
+        ? "—"
+        : $"{_diag.ReReadPercent:0}% ({_diag.WastedReads}/{_diag.ReadCalls})";
+    public string PeakDayText => _diag?.PeakDay is null
+        ? "—"
+        : $"${_diag.PeakDayUsd:0} on {_diag.PeakDay.Substring(5)}";
+    public string TopPromptText => _diag is null || _diag.TopPromptUsd <= 0
+        ? "—"
+        : $"${_diag.TopPromptUsd:0.00}";
+    public string TopPromptPreview => _diag?.TopPromptPreview ?? "";
+    public string BiggestReadText => _diag is null || _diag.BiggestToolResultBytes == 0
+        ? "—"
+        : FormatBytes(_diag.BiggestToolResultBytes);
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024 * 1024) return $"{bytes / (1024.0 * 1024):0.0} MB";
+        if (bytes >= 1024) return $"{bytes / 1024:0} KB";
+        return $"{bytes} B";
+    }
 
     public bool Matches(string query) =>
         (_entry.CustomTitle?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)

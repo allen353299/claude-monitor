@@ -76,15 +76,22 @@
                             Padding="8,3"
                             Height="18"
                             Margin="0,0,0,8">
-                        <ItemsControl ItemsSource="{Binding Bar.Blocks}">
+                        <ItemsControl x:Name="DashboardPixelBar"
+                                      ItemsSource="{Binding Bar.Blocks}"
+                                      VerticalAlignment="Center"
+                                      SizeChanged="OnPixelBarSizeChanged">
                             <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:PixelBlock">
-                                    <Rectangle Fill="{Binding Color}" Margin="1,0" RadiusX="1" RadiusY="1"
+                                    <Rectangle Fill="{Binding Color}"
+                                               Width="10" Height="10"
+                                               Margin="1,0" RadiusX="1" RadiusY="1"
                                                Classes.wave-block="{Binding IsWorking}"
-                                               Classes.lit="{Binding IsLit}" />
+                                               Classes.lit="{Binding IsLit}"
+                                               Classes.lit2="{Binding IsLit2}"
+                                               Classes.lit3="{Binding IsLit3}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -242,22 +249,24 @@
                                                 IsEnabled="{Binding HasJsonlPath}"
                                                 Click="OnHistoryRowClick"
                                                 Tag="{Binding}">
-                                            <Grid ColumnDefinitions="*,90,90">
-                                                <StackPanel Grid.Column="0" Spacing="2">
-                                                    <Grid ColumnDefinitions="Auto,*">
+                                            <Grid ColumnDefinitions="*,170,90,90">
+                                                <StackPanel Grid.Column="0" Spacing="2" ClipToBounds="True">
+                                                    <Grid ColumnDefinitions="*,Auto">
                                                         <TextBlock Grid.Column="0"
                                                                    Text="{Binding PrimaryLabel}"
                                                                    FontFamily="{StaticResource MonoFont}"
                                                                    FontSize="12"
                                                                    FontWeight="SemiBold"
                                                                    Foreground="#ffffff"
-                                                                   TextTrimming="CharacterEllipsis" />
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip.Tip="{Binding PrimaryLabel}" />
                                                         <TextBlock Grid.Column="1"
                                                                    Text="{Binding ProjectPath, StringFormat=' ({0})'}"
                                                                    FontFamily="{StaticResource MonoFont}"
                                                                    FontSize="11"
                                                                    Foreground="#888888"
                                                                    TextTrimming="CharacterEllipsis"
+                                                                   MaxWidth="320"
                                                                    VerticalAlignment="Center" />
                                                     </Grid>
                                                     <TextBlock Text="{Binding DetailLine}"
@@ -271,7 +280,34 @@
                                                                FontSize="9"
                                                                Foreground="#555555" />
                                                 </StackPanel>
-                                                <TextBlock Grid.Column="1"
+                                                <StackPanel Grid.Column="1"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right"
+                                                            Spacing="1"
+                                                            Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding ReReadText, StringFormat='re-read {0}'}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontSize="9"
+                                                               Foreground="#f59e0b"
+                                                               HorizontalAlignment="Right" />
+                                                    <TextBlock Text="{Binding PeakDayText, StringFormat='peak  {0}'}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontSize="9"
+                                                               Foreground="#a78bfa"
+                                                               HorizontalAlignment="Right" />
+                                                    <TextBlock Text="{Binding TopPromptText, StringFormat='topPmt {0}'}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontSize="9"
+                                                               Foreground="#3b82f6"
+                                                               HorizontalAlignment="Right"
+                                                               ToolTip.Tip="{Binding TopPromptPreview}" />
+                                                    <TextBlock Text="{Binding BiggestReadText, StringFormat='bigRd {0}'}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontSize="9"
+                                                               Foreground="#6b7280"
+                                                               HorizontalAlignment="Right" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2"
                                                            Text="{Binding UsdText}"
                                                            FontFamily="{StaticResource MonoFont}"
                                                            FontSize="11"
@@ -279,7 +315,7 @@
                                                            Foreground="#22c55e"
                                                            HorizontalAlignment="Right"
                                                            VerticalAlignment="Center" />
-                                                <TextBlock Grid.Column="2"
+                                                <TextBlock Grid.Column="3"
                                                            Text="{Binding TokensText}"
                                                            FontFamily="{StaticResource MonoFont}"
                                                            FontSize="9"

@@ -6,12 +6,18 @@
     <Application.Styles>
         <FluentTheme />
         <Style Selector="Rectangle.wave-block">
-            <Setter Property="Opacity" Value="0.35" />
+            <Setter Property="Opacity" Value="0.3" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
                 </Transitions>
             </Setter>
+        </Style>
+        <Style Selector="Rectangle.wave-block.lit3">
+            <Setter Property="Opacity" Value="0.55" />
+        </Style>
+        <Style Selector="Rectangle.wave-block.lit2">
+            <Setter Property="Opacity" Value="0.8" />
         </Style>
         <Style Selector="Rectangle.wave-block.lit">
             <Setter Property="Opacity" Value="1.0" />
@@ -25,10 +31,12 @@
                       Clicked="OnTrayClicked">
                 <TrayIcon.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Show popover" Click="OnTrayShowClick" />
-                        <NativeMenuItem Header="Hide popover" Click="OnTrayHideClick" />
-                        <NativeMenuItem Header="-" />
-                        <NativeMenuItem Header="Open dashboard" Click="OnTrayDashboardClick" />
+                        <NativeMenuItem Header="Popover"
+                                        ToggleType="CheckBox"
+                                        Click="OnTrayPopoverClick" />
+                        <NativeMenuItem Header="Dashboard"
+                                        ToggleType="CheckBox"
+                                        Click="OnTrayDashboardClick" />
                         <NativeMenuItem Header="-" />
                         <NativeMenuItem Header="Quit" Click="OnTrayQuitClick" />
                     </NativeMenu>

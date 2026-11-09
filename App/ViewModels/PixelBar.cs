@@ -10,34 +10,44 @@ namespace ClaudeMonitor.App.ViewModels;
 
 public sealed class PixelBar
 {
-    private const int ColumnCount = 28;
-    private static readonly TimeSpan WaveStep = TimeSpan.FromMilliseconds(150);
+    private const int InitialColumnCount = 28;
+    private const double TargetCycleMs = 720;
+    private const double MinStepMs = 30;
+    private const double MaxStepMs = 250;
+    private static readonly TimeSpan InitialWaveStep = TimeSpan.FromMilliseconds(80);
 
     public ObservableCollection<PixelBlock> Blocks { get; } = new();
 
     private readonly DispatcherTimer _waveTimer;
     private readonly List<int> _workingIndices = new();
     private int _waveCursor;
-    private int _previouslyLit = -1;
+    private int _columnCount = InitialColumnCount;
+    private IReadOnlyCollection<SessionVm>? _lastSessions;
 
     public PixelBar()
     {
-        for (int i = 0; i < ColumnCount; i++)
-        {
-            Blocks.Add(new PixelBlock { Color = StatusPalette.PixelEmpty });
-        }
-
-        _waveTimer = new DispatcherTimer(WaveStep, DispatcherPriority.Background, OnWaveTick);
+        ResizeBlocks(InitialColumnCount);
+        _waveTimer = new DispatcherTimer(InitialWaveStep, DispatcherPriority.Background, OnWaveTick);
         _waveTimer.Stop();
+    }
+
+    public void SetColumnCount(int count)
+    {
+        if (count < 1) count = 1;
+        if (count == _columnCount) return;
+        _columnCount = count;
+        ResizeBlocks(count);
+        if (_lastSessions is not null) Refresh(_lastSessions);
     }
 
     public void Refresh(IReadOnlyCollection<SessionVm> sessions)
     {
+        _lastSessions = sessions;
         var counts = TallyByStatus(sessions);
-        var layout = PixelBarDistribution.Distribute(counts, sessions.Count, ColumnCount);
+        var layout = PixelBarDistribution.Distribute(counts, sessions.Count, _columnCount);
 
         _workingIndices.Clear();
-        for (int i = 0; i < ColumnCount; i++)
+        for (int i = 0; i < _columnCount; i++)
         {
             var kind = layout[i];
             var block = Blocks[i];
@@ -52,13 +62,25 @@ public sealed class PixelBar
             var working = kind == BarColumn.Working;
             block.IsWorking = working;
             block.IsLit = false;
+            block.IsLit2 = false;
+            block.IsLit3 = false;
             if (working) _workingIndices.Add(i);
         }
 
-        _previouslyLit = -1;
         _waveCursor = 0;
-        if (_workingIndices.Count > 0) _waveTimer.Start();
+        if (_workingIndices.Count > 0)
+        {
+            var stepMs = Math.Clamp(TargetCycleMs / _workingIndices.Count, MinStepMs, MaxStepMs);
+            _waveTimer.Interval = TimeSpan.FromMilliseconds(stepMs);
+            _waveTimer.Start();
+        }
         else _waveTimer.Stop();
+    }
+
+    private void ResizeBlocks(int count)
+    {
+        while (Blocks.Count > count) Blocks.RemoveAt(Blocks.Count - 1);
+        while (Blocks.Count < count) Blocks.Add(new PixelBlock { Color = StatusPalette.PixelEmpty });
     }
 
     private void OnWaveTick(object? sender, EventArgs e)
@@ -68,14 +90,22 @@ public sealed class PixelBar
             _waveTimer.Stop();
             return;
         }
-        if (_previouslyLit >= 0 && _previouslyLit < Blocks.Count)
+
+        foreach (var idx in _workingIndices)
         {
-            Blocks[_previouslyLit].IsLit = false;
+            var b = Blocks[idx];
+            b.IsLit = false;
+            b.IsLit2 = false;
+            b.IsLit3 = false;
         }
-        var currentIdx = _workingIndices[_waveCursor % _workingIndices.Count];
-        Blocks[currentIdx].IsLit = true;
-        _previouslyLit = currentIdx;
-        _waveCursor = (_waveCursor + 1) % _workingIndices.Count;
+
+        var n = _workingIndices.Count;
+        var head = _workingIndices[_waveCursor % n];
+        Blocks[head].IsLit = true;
+        if (n > 1) Blocks[_workingIndices[((_waveCursor - 1) % n + n) % n]].IsLit2 = true;
+        if (n > 2) Blocks[_workingIndices[((_waveCursor - 2) % n + n) % n]].IsLit3 = true;
+
+        _waveCursor = (_waveCursor + 1) % n;
     }
 
     private static int[] TallyByStatus(IEnumerable<SessionVm> sessions)

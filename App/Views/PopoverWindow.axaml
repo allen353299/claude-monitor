@@ -155,7 +155,7 @@
                   Background="Transparent"
                   Cursor="SizeAll"
                   PointerPressed="OnDragHandlePressed"
-                  ColumnDefinitions="*,Auto,Auto,Auto"
+                  ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto"
                   Margin="14,3">
                 <TextBlock Grid.Column="0"
                            Text="{Binding SessionCountText}"
@@ -164,6 +164,73 @@
                            Foreground="#666666"
                            VerticalAlignment="Center" />
                 <Button Grid.Column="1"
+                        Classes="header-action"
+                        Content="&#xE71D;"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        Width="16" Height="16"
+                        Padding="0"
+                        Margin="6,0,0,0"
+                        Background="Transparent"
+                        Foreground="#888888"
+                        BorderThickness="0"
+                        FontSize="11"
+                        Cursor="Hand"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Toggle compact / complete view"
+                        Command="{Binding ToggleCompactCommand}">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#222222" />
+                            <Setter Property="Foreground" Value="#ffffff" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+                <Button Grid.Column="2"
+                        Classes="header-action"
+                        Content="−"
+                        Width="16" Height="16"
+                        Padding="0"
+                        Margin="6,0,0,0"
+                        Background="Transparent"
+                        Foreground="#888888"
+                        BorderThickness="0"
+                        FontSize="14"
+                        Cursor="Hand"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Show one fewer row"
+                        Click="OnDecreaseRowsClick">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#222222" />
+                            <Setter Property="Foreground" Value="#ffffff" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+                <Button Grid.Column="3"
+                        Classes="header-action"
+                        Content="+"
+                        Width="16" Height="16"
+                        Padding="0"
+                        Margin="0,0,4,0"
+                        Background="Transparent"
+                        Foreground="#888888"
+                        BorderThickness="0"
+                        FontSize="13"
+                        Cursor="Hand"
+                        VerticalContentAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        ToolTip.Tip="Show one more row"
+                        Click="OnIncreaseRowsClick">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#222222" />
+                            <Setter Property="Foreground" Value="#ffffff" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+                <Button Grid.Column="5"
                         Classes="header-action"
                         Content="&#xE8A7;"
                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
@@ -186,7 +253,7 @@
                         </Style>
                     </Button.Styles>
                 </Button>
-                <Button Grid.Column="2"
+                <Button Grid.Column="6"
                         x:Name="PinButton"
                         Classes="header-action"
                         Content="&#xE840;"
@@ -208,7 +275,7 @@
                         </Style>
                     </Button.Styles>
                 </Button>
-                <Button Grid.Column="3"
+                <Button Grid.Column="7"
                         Classes="header-action"
                         Content="×"
                         Width="16" Height="16"
@@ -235,26 +302,32 @@
                     BorderBrush="#222222"
                     BorderThickness="0,1"
                     Padding="16,3"
-                    Height="16">
-                <ItemsControl ItemsSource="{Binding Bar.Blocks}">
+                    Height="18">
+                <ItemsControl x:Name="PopoverPixelBar"
+                              ItemsSource="{Binding Bar.Blocks}"
+                              VerticalAlignment="Center"
+                              SizeChanged="OnPixelBarSizeChanged">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="1" />
+                            <StackPanel Orientation="Horizontal" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PixelBlock">
                             <Rectangle Fill="{Binding Color}"
+                                       Width="10" Height="10"
                                        Margin="1,0"
                                        RadiusX="1" RadiusY="1"
                                        Classes.wave-block="{Binding IsWorking}"
-                                       Classes.lit="{Binding IsLit}" />
+                                       Classes.lit="{Binding IsLit}"
+                                       Classes.lit2="{Binding IsLit2}"
+                                       Classes.lit3="{Binding IsLit3}" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </Border>
 
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="2" x:Name="SessionsArea">
                 <TextBlock Text="NO ACTIVE SESSIONS"
                            FontFamily="{StaticResource MonoFont}"
                            FontSize="11"
@@ -264,10 +337,11 @@
                            VerticalAlignment="Center"
                            IsVisible="{Binding IsEmpty}" />
 
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                <ScrollViewer x:Name="SessionsScroll"
+                              HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto"
                               IsVisible="{Binding !IsEmpty}">
-                    <ItemsControl ItemsSource="{Binding Sessions}">
+                    <ItemsControl x:Name="SessionsList" ItemsSource="{Binding Sessions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SessionVm">
                                 <Grid Opacity="{Binding CardOpacity}">

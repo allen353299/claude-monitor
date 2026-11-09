@@ -25,15 +25,19 @@ public static class PixelBarDistribution
         var allocated = new int[CategoryCount];
         var remainders = new double[CategoryCount];
         var totalAllocated = 0;
+        var sumTallied = 0;
         for (int i = 0; i < CategoryCount; i++)
         {
             percentages[i] = (double)countsByCategory[i] / totalSessions * columns;
             allocated[i] = (int)Math.Floor(percentages[i]);
             remainders[i] = percentages[i] - allocated[i];
             totalAllocated += allocated[i];
+            sumTallied += countsByCategory[i];
         }
 
-        var capacity = Math.Min(columns, totalSessions <= columns ? totalSessions : columns);
+        var capacity = sumTallied >= totalSessions
+            ? columns
+            : Math.Min(columns, sumTallied);
 
         while (totalAllocated < capacity)
         {

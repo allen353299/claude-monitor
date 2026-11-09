@@ -25,10 +25,11 @@ public sealed partial class DashboardViewModel : ObservableObject
         PopoverViewModel sharedPopover,
         IHistoryReader historyReader,
         IMemoryReader memoryReader,
-        ICostReader costReader)
+        ICostReader costReader,
+        ISessionDiagnosticsReader diagnosticsReader)
     {
         Monitor = new MonitorTabViewModel(sharedPopover);
-        History = new HistoryTabViewModel(historyReader, costReader);
+        History = new HistoryTabViewModel(historyReader, costReader, diagnosticsReader);
         Memory = new MemoryTabViewModel(memoryReader);
     }
 

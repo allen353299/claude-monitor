@@ -4,4 +4,5 @@
   <Project Path="Mac/Mac.csproj" />
   <Project Path="App/App.csproj" />
   <Project Path="Core.UnitTests/Core.UnitTests.csproj" />
+  <Project Path="Windows.UnitTests/Windows.UnitTests.csproj" />
 </Solution>

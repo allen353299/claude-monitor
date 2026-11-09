@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -16,6 +17,7 @@ public partial class DashboardWindow : Window
 
     private DispatcherTimer? _persistDebounceTimer;
     private bool _stateRestored;
+    private string? _currentFingerprint;
 
     public DashboardWindow()
     {
@@ -23,16 +25,85 @@ public partial class DashboardWindow : Window
         RestoreWindowState();
         Opened += (_, _) =>
         {
+            _currentFingerprint = ComputeFingerprint();
+            TryApplyFingerprintState();
             EnsurePositionOnVisibleScreen();
+            if (Screens is { } screens) screens.Changed += OnScreensChanged;
             _stateRestored = true;
         };
         SizeChanged += (_, _) => SchedulePersist();
         PositionChanged += (_, _) => SchedulePersist();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsVisibleProperty && IsVisible && _stateRestored)
+                EnsurePositionOnVisibleScreen();
+        };
         Closing += (_, _) =>
         {
             _persistDebounceTimer?.Stop();
             PersistWindowState();
         };
+    }
+
+    private void OnScreensChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(HandleLayoutChange);
+
+    private void HandleLayoutChange()
+    {
+        var newFp = ComputeFingerprint();
+        if (newFp == _currentFingerprint)
+        {
+            EnsurePositionOnVisibleScreen();
+            return;
+        }
+        if (_currentFingerprint is not null && _stateRestored)
+        {
+            PersistedWindowStateStore.Save(StatePath, _currentFingerprint,
+                new PersistedWindowState(Position.X, Position.Y, Width, Height, false));
+        }
+        _currentFingerprint = newFp;
+        if (newFp is not null && PersistedWindowStateStore.TryLoad(StatePath, newFp, out var state))
+        {
+            Position = new PixelPoint(state.X, state.Y);
+            Width = state.Width;
+            Height = state.Height;
+        }
+        EnsurePositionOnVisibleScreen();
+    }
+
+    private void TryApplyFingerprintState()
+    {
+        if (_currentFingerprint is null) return;
+        if (!PersistedWindowStateStore.TryLoad(StatePath, _currentFingerprint, out var state)) return;
+        if (state.X == Position.X && state.Y == Position.Y
+            && Math.Abs(state.Width - Width) < 0.5 && Math.Abs(state.Height - Height) < 0.5)
+            return;
+        Position = new PixelPoint(state.X, state.Y);
+        Width = state.Width;
+        Height = state.Height;
+    }
+
+    private string? ComputeFingerprint()
+    {
+        if (Screens is null || Screens.All.Count == 0) return null;
+        var infos = new List<ScreenInfo>(Screens.All.Count);
+        foreach (var s in Screens.All)
+        {
+            var area = s.WorkingArea;
+            infos.Add(new ScreenInfo(area.X, area.Y, area.Width, area.Height, s.DisplayName, s.IsPrimary));
+        }
+        return WindowPositionPolicy.ComputeLayoutFingerprint(infos);
+    }
+
+    private const double PixelBarSlotPitch = 12;
+
+    private void OnPixelBarSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is not DashboardViewModel vm) return;
+        var width = e.NewSize.Width;
+        if (width <= 0) return;
+        var count = (int)Math.Floor(width / PixelBarSlotPitch);
+        if (count < 1) count = 1;
+        vm.Monitor.Popover.Bar.SetColumnCount(count);
     }
 
     private void RestoreWindowState()
@@ -46,23 +117,18 @@ public partial class DashboardWindow : Window
 
     private void EnsurePositionOnVisibleScreen()
     {
-        var screens = Screens;
-        if (screens is null || screens.All.Count == 0) return;
-
+        if (Screens is null || Screens.All.Count == 0) return;
         var width = (int)Bounds.Width;
         var height = (int)Bounds.Height;
-        foreach (var s in screens.All)
+        if (width <= 0 || height <= 0) { width = (int)Width; height = (int)Height; }
+        var infos = new List<ScreenInfo>(Screens.All.Count);
+        foreach (var s in Screens.All)
         {
             var area = s.WorkingArea;
-            if (Position.X + width > area.X && Position.X < area.X + area.Width
-                && Position.Y + height > area.Y && Position.Y < area.Y + area.Height)
-            {
-                return;
-            }
+            infos.Add(new ScreenInfo(area.X, area.Y, area.Width, area.Height, s.DisplayName, s.IsPrimary));
         }
-        var primary = screens.Primary ?? screens.All[0];
-        var pa = primary.WorkingArea;
-        Position = new PixelPoint(pa.X + (pa.Width - width) / 2, pa.Y + (pa.Height - height) / 2);
+        var clamped = WindowPositionPolicy.ClampToVisibleScreens(Position.X, Position.Y, width, height, infos);
+        if (clamped is { } pt) Position = new PixelPoint(pt.X, pt.Y);
     }
 
     private void SchedulePersist()
@@ -82,7 +148,7 @@ public partial class DashboardWindow : Window
     private void PersistWindowState()
     {
         if (!_stateRestored) return;
-        PersistedWindowStateStore.Save(StatePath, new PersistedWindowState(
+        PersistedWindowStateStore.Save(StatePath, _currentFingerprint, new PersistedWindowState(
             Position.X, Position.Y, Width, Height, false));
     }
 
